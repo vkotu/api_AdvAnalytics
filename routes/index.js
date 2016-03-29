@@ -44,14 +44,14 @@ router.get('/categoriesList', function(req,res,next) {
 
 });
 
-router.get('/searchCategory',function(req,res){
+router.post('/searchEventFulAPI',function(req,res){
+  console.log(req.body);
   var keyword = req.param("keyword");
-  client.searchEvents({ keywords: keyword, date: 'Future', page_size: 100,location: "United States",page_number:1 }, function(err, data){
-
+  var location = req.param("location");
+  var pageNumber = req.param("pageNumber");
+  client.searchEvents({ keywords: keyword, date: 'Future', page_size: 100,location: location, page_number: pageNumber}, function(err, data){
     if(err){
-
       return console.error(err);
-
     }else{
       console.log('===========Recieved=========== ' + data.search.total_items + ' events');
       res.send(data);
@@ -60,7 +60,40 @@ router.get('/searchCategory',function(req,res){
   });
 });
 
-router.get('/searchAndInsertCategory',function(req,res) {
+
+router.post('/getEventCounts',function(req,res) {
+  var category = req.param("category");
+  var qry = "select region_name, region_abbr, count(*) as noOfEvents from events where eventid = ? group by region_abbr , region_name";
+  var params = [category];
+  mysql.fetchData(qry,params,function(err,results){
+    if(err) {
+      console.log(err);
+      res.statusCode = 500;
+      var obj = {
+        status: "failed",
+        msg: err
+      };
+      res.send(JSON.stringify(obj));
+    }else{
+      console.log(results.length);
+      var data = {
+        status: "success",
+        totalNoOfStates: results.length,
+        eventCounts: results
+      };
+      res.statusCode = 200;
+      res.send(JSON.stringify(data));
+    }
+  });
+});
+
+
+/*
+
+Ignote all end points below for internal purpose
+ */
+
+router.post('/searchAndInsertCategory',function(req,res) {
   var keyword = req.param("keyword");
   client.searchEvents({ keywords: keyword, date: 'Future', page_size: 100,location: "United States",page_number:1 }, function(err, data){
 
@@ -98,35 +131,6 @@ router.get('/searchAndInsertCategory',function(req,res) {
     }
   });
 });
-
-router.get('/getEventCounts',function(req,res) {
-  var category = req.param("category");
-  var qry = "select region_name, region_abbr, count(*) as noOfEvents from events where eventid = ? group by region_abbr , region_name";
-  var params = [category];
-  mysql.fetchData(qry,params,function(err,results){
-    if(err) {
-      console.log(err);
-      res.statusCode = 500;
-      var obj = {
-        status: "failed",
-        msg: err
-      };
-      res.send(JSON.stringify(obj));
-    }else{
-      console.log(results.length);
-      var data = {
-        status: "success",
-        totalNoOfStates: results.length,
-        eventCounts: results
-      };
-      res.statusCode = 200;
-      res.send(JSON.stringify(data));
-    }
-  });
-});
-
-
-
 
 router.get('/searchEvents', function(req,res,next) {
   var keyword = req.param("keyword");
