@@ -103,25 +103,26 @@ router.get('/getEventCounts',function(req,res) {
   var category = req.param("category");
   var qry = "select region_name, region_abbr, count(*) as noOfEvents from events where eventid = ? group by region_abbr , region_name";
   var params = [category];
-  //mysql.fetchData(qry,params,function(err,results){
-  //  if(err) {
-  //    console.log(err);
-  //    res.statusCode = 500;
-  //    var obj = {
-  //      status: "failed",
-  //      msg: err
-  //    };
-  //    res.send(JSON.stringify(obj));
-  //  }else{
-  //    console.log(results.length);
-  //    res.send(JSON.stringify(results));
-  //  }
-  //});
-  var obj = {
-    status: "failed",
-    msg: err
-  };
-  res.send(JSON.stringify(obj));
+  mysql.fetchData(qry,params,function(err,results){
+    if(err) {
+      console.log(err);
+      res.statusCode = 500;
+      var obj = {
+        status: "failed",
+        msg: err
+      };
+      res.send(JSON.stringify(obj));
+    }else{
+      console.log(results.length);
+      var data = {
+        status: "success",
+        totalNoOfStates: results.length,
+        eventCounts: results
+      };
+      res.statusCode = 200;
+      res.send(JSON.stringify(data));
+    }
+  });
 });
 
 
