@@ -5,43 +5,30 @@ var eventful = require('eventful-node');
 var client = new eventful.Client("gFNTdP3rLVhWS6rw");
 var mysql = require('./mysql');
 var Promise = require('promise');
+
+
 /* GET home page. */
+
 router.get('/', function(req, res, next) {
 
   res.render('index', { title: 'Express' });
 });
 
-router.get('/categoriesList', function(req,res,next) {
-  console.log(req.query.category);
+router.post('/getCategories', function(req,res,next) {
   client.listCategories(function(err, data){
-
     if(err){
-
-      return console.error(err);
-
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+     res.statusCode = 200;
+      var data = {
+        "status" : "success",
+        "data": data
+      }
+      res.send(data);
     }
-    for(var i in data){
-      (function(i){
-        console.log('Available event categories: ');
-        console.log('id:' + data[i].id);
-        //console.log('id:' + data[i].name);
-        var id   = data[i].id.trim();
-        var name = data[i].name.trim();
-        name = name.replace(/&amp;/g,'');
-        var qry = "insert into categories (eventid,eventname) values(?, ?)";
-        var params = [id,name];
-        mysql.execQuery(qry,params, function(err,results){
-          if(err){
-            console.log("error updating sumary up" + err);
-          }else{
-            console.log("executed > "+ id+ " , "+name);
-          }
-        });
-      })(i);
-    }
+
   });
-  res.end();
-
 });
 
 router.post('/searchEventFulAPI',function(req,res){
@@ -68,12 +55,6 @@ router.post('/getEventCounts',function(req,res) {
   mysql.fetchData(qry,params,function(err,results){
     if(err) {
       console.log(err);
-      res.statusCode = 500;
-      var obj = {
-        status: "failed",
-        msg: err
-      };
-      res.send(JSON.stringify(obj));
     }else{
       console.log(results.length);
       var data = {
@@ -82,7 +63,7 @@ router.post('/getEventCounts',function(req,res) {
         eventCounts: results
       };
       res.statusCode = 200;
-      res.send(JSON.stringify(data));
+      res.send(data);
     }
   });
 });
@@ -192,5 +173,46 @@ router.get('/searchEvents', function(req,res,next) {
   res.end();
 });
 
+
+router.get('/categoriesList', function(req,res,next) {
+  console.log(req.query.category);
+  client.listCategories(function(err, data){
+
+    if(err){
+
+      return console.error(err);
+
+    }
+    for(var i in data){
+      (function(i){
+        console.log('Available event categories: ');
+        console.log('id:' + data[i].id);
+        //console.log('id:' + data[i].name);
+        var id   = data[i].id.trim();
+        var name = data[i].name.trim();
+        name = name.replace(/&amp;/g,'');
+        var qry = "insert into categories (eventid,eventname) values(?, ?)";
+        var params = [id,name];
+        mysql.execQuery(qry,params, function(err,results){
+          if(err){
+            console.log("error updating sumary up" + err);
+          }else{
+            console.log("executed > "+ id+ " , "+name);
+          }
+        });
+      })(i);
+    }
+  });
+  res.end();
+
+});
+
+var errorMessage = function sendError(err){
+  var obj = {
+    status: "failed",
+    msg: err
+  };
+  return JSON.stringify(obj);
+};
 
 module.exports = router;
