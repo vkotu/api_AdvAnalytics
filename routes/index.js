@@ -33,12 +33,13 @@ router.post('/getCategories', function(req,res,next) {
 
 router.post('/searchEventFulAPI',function(req,res){
   console.log(req.body);
-  var keyword = req.param("keyword");
+  var keyword = req.param("category");
   var location = req.param("location");
   var pageNumber = req.param("pageNumber");
   client.searchEvents({ keywords: keyword, date: 'Future', page_size: 100,location: location, page_number: pageNumber}, function(err, data){
     if(err){
-      return console.error(err);
+      res.statusCode = 500;
+      res.send(errorMessage(err));
     }else{
       console.log('===========Recieved=========== ' + data.search.total_items + ' events');
       res.send(data);
@@ -50,11 +51,13 @@ router.post('/searchEventFulAPI',function(req,res){
 
 router.post('/getEventCounts',function(req,res) {
   var category = req.param("category");
-  var qry = "select region_name, region_abbr, count(*) as noOfEvents from events where eventid = ? group by region_abbr , region_name";
+  var qry = "select region_name, region_abbr, count(*) as noOfEvents from events where category_id = ? group by region_abbr , region_name";
   var params = [category];
   mysql.fetchData(qry,params,function(err,results){
     if(err) {
       console.log(err);
+      res.statusCode = 500;
+      res.send(errorMessage(err));
     }else{
       console.log(results.length);
       var data = {
@@ -69,9 +72,53 @@ router.post('/getEventCounts',function(req,res) {
 });
 
 
+router.post('/getEventsInStateForCategory', function(req,res) {
+  var category = req.param("category");
+  var state = req.param("state");
+  var qry = "SELECT * FROM Advertiser_Analytics.events where category_id = ? and region_abbr = ?";
+  var params = [category, state];
+  mysql.fetchData(qry,params,function(err,results) {
+    if(err){
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      console.log(results.length);
+      var data = {
+        status: "success",
+        totalNoOfEvents: results.length,
+        events: results
+      }
+      res.statusCode = 200;
+      res.send(data);
+    }
+  });
+});
+
+
+
+var errorMessage = function sendError(err){
+  var obj = {
+    status: "failed",
+    msg: err
+  };
+  return JSON.stringify(obj);
+};
+
+
+
+
+
+
+
+
+
 /*
 
-Ignote all end points below for internal purpose
+************
+Ignore all end points below,  for internal purpose only
+************
+
+
  */
 
 router.post('/searchAndInsertCategory',function(req,res) {
@@ -93,7 +140,7 @@ router.post('/searchAndInsertCategory',function(req,res) {
         console.log(params+ " ");
         var q2 = "INSERT INTO Advertiser_Analytics.events ( title, url, description, start_time, stop_time, venue_url," +
             "venue_name,  venue_address, city_name, region_name, region_abbr, postal_code, country_name, country_abbr, latitude, longitude, " +
-            "created, modified, image_url,eventid) VALUES (? ,? ,? ,? ,? ,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            "created, modified, image_url,category_id) VALUES (? ,? ,? ,? ,? ,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         mysql.execQuery(q2,params, function(err,results){
           if(err){
 
@@ -130,8 +177,8 @@ router.get('/searchEvents', function(req,res,next) {
     }else {
       for(var j = 0 ; j < results.length ;  j++) {
         (function(j){
-          console.log(results[j].eventid);
-          client.searchEvents({ keywords: results[j].eventid, date: 'Future', page_size: 1000,location: "United States",page_number:1 }, function(err, data){
+          console.log(results[j].category_id);
+          client.searchEvents({ keywords: results[j].category_id, date: 'Future', page_size: 1000,location: "United States",page_number:1 }, function(err, data){
 
             if(err){
 
@@ -144,11 +191,11 @@ router.get('/searchEvents', function(req,res,next) {
                 var curEvent = data.search.events.event[i];
                 var params = [curEvent.title,curEvent.url,"No description available",curEvent.start_time,curEvent.stop_time,curEvent.venue_url,
                   curEvent.venue_name,curEvent.venue_address,curEvent.city_name,curEvent.region_name,curEvent.region_abbr,curEvent.postal_code,
-                  curEvent.country_name,curEvent.country_abbr,curEvent.latitude,curEvent.longitude,curEvent.created,curEvent.modified,curEvent.image.url,results[j].eventid];
+                  curEvent.country_name,curEvent.country_abbr,curEvent.latitude,curEvent.longitude,curEvent.created,curEvent.modified,curEvent.image.url,results[j].category_id];
                 console.log(params+ " ");
                 var q2 = "INSERT INTO Advertiser_Analytics.events ( title, url, description, start_time, stop_time, venue_url," +
                     "venue_name,  venue_address, city_name, region_name, region_abbr, postal_code, country_name, country_abbr, latitude, longitude, " +
-                    "created, modified, image_url,eventid) VALUES (? ,? ,? ,? ,? ,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                    "created, modified, image_url,category_id) VALUES (? ,? ,? ,? ,? ,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
                 mysql.execQuery(q2,params, function(err,results){
                   if(err){
 
@@ -191,7 +238,7 @@ router.get('/categoriesList', function(req,res,next) {
         var id   = data[i].id.trim();
         var name = data[i].name.trim();
         name = name.replace(/&amp;/g,'');
-        var qry = "insert into categories (eventid,eventname) values(?, ?)";
+        var qry = "insert into categories (category_id,category_name) values(?, ?)";
         var params = [id,name];
         mysql.execQuery(qry,params, function(err,results){
           if(err){
@@ -207,12 +254,6 @@ router.get('/categoriesList', function(req,res,next) {
 
 });
 
-var errorMessage = function sendError(err){
-  var obj = {
-    status: "failed",
-    msg: err
-  };
-  return JSON.stringify(obj);
-};
+
 
 module.exports = router;
