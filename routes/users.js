@@ -9,7 +9,7 @@ router.get('/', function(req, res, next) {
 
 
 router.post('/login',
-    passport.authenticate('local', { session: false, failureRedirect: "http://localhost:5200/" }),
+    passport.authenticate('local', { session: false, failureRedirect: "https://advclient.herokuapp.com/" }),
     function(req, res) {
       console.log(req.user);
       updateUserToken(req.user,function(msg){

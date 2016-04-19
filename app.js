@@ -31,7 +31,7 @@ app.use('/users', users);
 passport.use(new LocalStrategy({usernameField: 'email',passwordField: 'password',session:false,passReqToCallback:true},
     function(req,username, password, done) {
       var getUser="select * from users where email=? and password= ?";
-      params = [username,password]
+      var params = [username,password];
       mysql.fetchData(getUser,params,function(err,results){
         if(err){
           var msg = "Error occurred while logging in " + err;
