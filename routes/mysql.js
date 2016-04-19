@@ -4,12 +4,23 @@
 var ejs= require('ejs');
 var mysql = require('mysql');
 
+//function getConnection(){
+//    var connection = mysql.createConnection({
+//        host     : 'localhost',
+//        user     : 'root',
+//        password : 'password',
+//        database : 'Advertiser_Analytics'
+//    });
+//    return connection;
+//}
+
+
 function getConnection(){
     var connection = mysql.createConnection({
-        host     : 'localhost',
+        host     : '104.197.18.167',
         user     : 'root',
-        password : 'password',
-        database : 'Advertiser_Analytics'
+        password : 'root',
+        database : 'adv'
     });
     return connection;
 }

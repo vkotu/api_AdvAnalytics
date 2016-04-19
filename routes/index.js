@@ -14,6 +14,27 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+router.get('/testcloudsql', function(req, res, next) {
+  var qry = "select * from categories";
+  mysql.fetchData(qry,[],function(err,results) {
+    if(err) {
+      console.log(err);
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      console.log(results.length);
+      var data = {
+        status: "success",
+        totalNoOfStates: results.length,
+        eventCounts: results
+      };
+      res.statusCode = 200;
+      res.send(data);
+    }
+  });
+
+});
+
 router.post('/getCategories', function(req,res,next) {
   client.listCategories(function(err, data){
     if(err){
