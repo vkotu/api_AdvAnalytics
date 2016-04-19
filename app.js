@@ -27,6 +27,12 @@ var passport = require('passport');
 
 app.use('/', routes);
 app.use('/users', users);
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  next();
+});
 
 passport.use(new LocalStrategy({usernameField: 'email',passwordField: 'password',session:false,passReqToCallback:true},
     function(req,username, password, done) {
