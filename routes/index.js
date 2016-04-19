@@ -17,19 +17,21 @@ router.get('/', function(req, res, next) {
 
 
 router.post('/getCategories', function(req,res,next) {
-  client.listCategories(function(err, data){
+  var qry = "SELECT * FROM adv.categories";
+  mysql.fetchData(qry,[],function(err,results) {
     if(err){
       res.statusCode = 500;
       res.send(errorMessage(err));
     }else{
-     res.statusCode = 200;
+      console.log(results.length);
       var data = {
-        "status" : "success",
-        "data": data
+        status: "success",
+        totalNoOfEvents: results.length,
+        events: results
       }
-      res.send(JSON.stringify(data));
+      res.statusCode = 200;
+      res.send(data);
     }
-
   });
 });
 
@@ -100,7 +102,7 @@ router.post('/getEventsInStateForCategory', function(req,res) {
 
 var errorMessage = function sendError(err){
   var obj = {
-    status: "failed",
+    status: "fail",
     msg: err
   };
   return JSON.stringify(obj);
