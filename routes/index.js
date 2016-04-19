@@ -27,7 +27,7 @@ router.post('/getCategories', function(req,res,next) {
         "status" : "success",
         "data": data
       }
-      res.send(data);
+      res.send(JSON.stringify(data));
     }
 
   });

@@ -58,7 +58,40 @@ router.post('/getUser', function (req, res) {
 });
 
 
-
+router.post('/updateProfile', function (req, res) {
+  var token = req.param("token");
+  var fname = req.param("firstname");
+  var lname = req.param("lastname");
+  var email = req.param("email");
+  var password = req.param("password");
+  var interests = req.param("interests");
+  var qry = "select * from adv.users where token = ?";
+  if (token) {
+    var params = [token];
+    mysql.fetchData(qry, params, function (err, results) {
+      if (err) {
+        res.status(500);
+        res.send({"msg": err,"status":"fail"});
+        res.end();
+      } else {
+        console.log(results);
+        if(results.length){
+          res.status(200);
+          res.send({"msg": "found user","status":"success", data: results});
+          res.end();
+        }else{
+          res.status(500);
+          res.send({"msg": "no user found or session expired, please login again", "status":"fail", data: results});
+          res.end();
+        }
+      }
+    });
+  } else {
+    res.status(500);
+    res.send({"msg": "No Token found","status":"fail"});
+    res.end();
+  }
+});
 
 router.post('/signup', function(req,res) {
   var fname = req.param("firstname");
