@@ -29,9 +29,10 @@ router.post('/login',
 
 router.post('/getUser', function (req, res) {
   var token = req.param("token");
-  var qry = "select * from adv.users where token = ?";
+  var qry = "select id,fname, lname,email, token,gender,age,city,state,country  from adv.users where token = ?";
   if (token) {
     var params = [token];
+    var finaldata = {};
     mysql.fetchData(qry, params, function (err, results) {
       if (err) {
         res.status(500);
@@ -40,9 +41,21 @@ router.post('/getUser', function (req, res) {
       } else {
         console.log(results);
         if(results.length){
-          res.status(200);
-          res.send({"msg": "found user","status":"success", data: results});
-          res.end();
+          finaldata.user = results;
+          var user_id = results[0].id;
+          var sql = "SELECT * FROM adv.interests where userid = ?";
+          mysql.fetchData(sql, [user_id], function(err,results) {
+            if(err){
+              res.status(500);
+              res.send({"msg": "error while fetching data","status":"fail"});
+              res.end();
+            }else{
+              finaldata.interests = results
+              res.status(200);
+              res.send({"msg": "found user","status":"success", data: finaldata});
+              res.end();
+            }
+          });
         }else{
           res.status(500);
           res.send({"msg": "no user found or session expired, please login again", "status":"fail", data: results});
@@ -64,10 +77,15 @@ router.post('/updateProfile', function (req, res) {
   var lname = req.param("lastname");
   var email = req.param("email");
   var password = req.param("password");
+  var gender = req.param("gender");
+  var age = req.param("age");
+  var city = req.param("city");
+  var state = req.param("state");
+  var country = req.param("country");
   var interests = req.param("interests");
-  var qry = "select * from adv.users where token = ?";
+  var qry = "select * from adv.users where token = ? and email = ? ";
   if (token) {
-    var params = [token];
+    var params = [token,email];
     mysql.fetchData(qry, params, function (err, results) {
       if (err) {
         res.status(500);
@@ -75,10 +93,20 @@ router.post('/updateProfile', function (req, res) {
         res.end();
       } else {
         console.log(results);
-        if(results.length){
-          res.status(200);
-          res.send({"msg": "found user","status":"success", data: results});
-          res.end();
+        var user_id = results[0].id;
+        if(results.length) {
+          var sql1 = "update  users set fname = ?, lname = ?, password= ?, gender= ?, age= ?, city= ? ,state= ?, country= ? where token = ? and email = ?";
+          var params = [fname,lname,password,gender,age,city,state,country,token,email];
+          mysql.execQuery(sql1, params , function(err, results) {
+            if(err) {
+              res.statusCode = 500;
+              res.send(errorMessage(err));
+            }else{
+              res.status(200);
+              res.send({"msg": "Updated user","status":"success"});
+              res.end();
+            }
+          });
         }else{
           res.status(500);
           res.send({"msg": "no user found or session expired, please login again", "status":"fail", data: results});
@@ -153,5 +181,13 @@ function updateUserToken(profile,callback) {
   });
 }
 
+
+var errorMessage = function sendError(err){
+  var obj = {
+    status: "fail",
+    msg: err
+  };
+  return JSON.stringify(obj);
+};
 
 module.exports = router;
