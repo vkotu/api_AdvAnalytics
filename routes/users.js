@@ -15,16 +15,47 @@ router.post('/login',
       updateUserToken(req.user,function(msg){
         if(msg.status == 'fail'){
           res.status(500);
-          res.send({"msg":msg.msg});
+          res.send({"msg":msg.msg,"status":"fail"});
           res.end();
         }else{
           res.status(200);
-          res.send({"msg":"Valid Login",accessToken:msg.accessToken});
+          res.send({"msg":"Valid Login","status":"success",accessToken:msg.accessToken});
           res.end();
         }
       });
     }
 );
+
+
+router.post('/getUser', function (req, res) {
+  var token = req.param("token");
+  var qry = "select * from adv.users where token = ?";
+  if (token) {
+    var params = [token];
+    mysql.fetchData(qry, params, function (err, results) {
+      if (err) {
+        res.status(500);
+        res.send({"msg": err,"status":"fail"});
+        res.end();
+      } else {
+        console.log(results);
+        if(results.length){
+          res.status(200);
+          res.send({"msg": "found user","status":"success", data: results});
+          res.end();
+        }else{
+          res.status(500);
+          res.send({"msg": "no user found or session expired, please login again", "status":"fail", data: results});
+          res.end();
+        }
+      }
+    });
+  } else {
+    res.status(500);
+    res.send({"msg": "No Token found","status":"fail"});
+    res.end();
+  }
+});
 
 
 
@@ -39,12 +70,12 @@ router.post('/signup', function(req,res) {
   mysql.execQuery(qry,params, function(err,results){
     if(err){
       res.status(500);
-      res.send({"msg":err});
+      res.send({"msg":err,"status":"fail"});
       res.end();
     }
     else{
       res.status(200);
-      res.send({"msg":"successfully created user"});
+      res.send({"msg":"successfully created user","status":"success"});
       res.end();
     }
   });
@@ -76,7 +107,7 @@ function updateUserToken(profile,callback) {
           }
           else{
             console.log("updated user acces token");
-            callback( {status:'ok',accessToken:accessToken} );
+            callback( {status:'success',accessToken:accessToken} );
           }
         });
 
