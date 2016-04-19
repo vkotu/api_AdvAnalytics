@@ -37,6 +37,7 @@ app.use('/users', users);
 
 passport.use(new LocalStrategy({usernameField: 'email',passwordField: 'password',session:false,passReqToCallback:true},
     function(req,username, password, done) {
+      console.log(req);
       var getUser="select * from users where email=? and password= ?";
       var params = [username,password];
       mysql.fetchData(getUser,params,function(err,results){

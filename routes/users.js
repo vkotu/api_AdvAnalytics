@@ -27,6 +27,8 @@ router.post('/login',
 );
 
 
+
+
 router.post('/signup', function(req,res) {
   var fname = req.param("firstname");
   var lname = req.param("lastname");
@@ -47,6 +49,8 @@ router.post('/signup', function(req,res) {
     }
   });
 });
+
+
 function updateUserToken(profile,callback) {
   var accessToken = profile.accessToken;
   var getUser = "select * from users where email= ?";
@@ -63,7 +67,7 @@ function updateUserToken(profile,callback) {
     {
       if(results.length > 0){
         console.log("Email exists in DB");
-        params = [accessToken,profile.provider, email];
+        params = [accessToken, email];
         var updQry = "update users set token = ?  where  email = ? ";
         mysql.execQuery(updQry,params, function(err,results){
           if(err){
