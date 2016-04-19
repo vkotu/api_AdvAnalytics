@@ -4,10 +4,10 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
+var mysql = require('./routes/mysql');
 var routes = require('./routes/index');
 var users = require('./routes/users');
-
+var secretKey = "venkat";
 var app = express();
 
 // view engine setup
@@ -21,9 +21,44 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+var LocalStrategy = require('passport-local').Strategy;
+var jwt = require('jwt-simple');
+var passport = require('passport');
 
 app.use('/', routes);
 app.use('/users', users);
+
+passport.use(new LocalStrategy({usernameField: 'email',passwordField: 'password',session:false,passReqToCallback:true},
+    function(req,username, password, done) {
+      var getUser="select * from users where email=? and password= ?";
+      params = [username,password]
+      mysql.fetchData(getUser,params,function(err,results){
+        if(err){
+          var msg = "Error occurred while logging in " + err;
+          return done(msg);
+        }
+        else
+        {
+          if(results.length > 0){
+            console.log("valid Login");
+            console.log(results[0]);
+            var user = results[0];
+            user.provider = 'local';
+            var id = user.id;
+            var token = jwt.encode(id, secretKey);
+            user.accessToken = token;
+            return done(null,user)
+          }
+          else {
+            console.log("Invalid Login");
+            return done(null,false);
+          }
+        }
+      });
+    }
+));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

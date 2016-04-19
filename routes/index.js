@@ -14,26 +14,7 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.get('/testcloudsql', function(req, res, next) {
-  var qry = "select * from categories";
-  mysql.fetchData(qry,[],function(err,results) {
-    if(err) {
-      console.log(err);
-      res.statusCode = 500;
-      res.send(errorMessage(err));
-    }else{
-      console.log(results.length);
-      var data = {
-        status: "success",
-        totalNoOfStates: results.length,
-        eventCounts: results
-      };
-      res.statusCode = 200;
-      res.send(data);
-    }
-  });
 
-});
 
 router.post('/getCategories', function(req,res,next) {
   client.listCategories(function(err, data){
@@ -96,7 +77,7 @@ router.post('/getEventCounts',function(req,res) {
 router.post('/getEventsInStateForCategory', function(req,res) {
   var category = req.param("category");
   var state = req.param("state");
-  var qry = "SELECT * FROM Advertiser_Analytics.events where category_id = ? and region_abbr = ?";
+  var qry = "SELECT * FROM adv.events where category_id = ? and region_abbr = ?";
   var params = [category, state];
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
@@ -159,7 +140,7 @@ router.post('/searchAndInsertCategory',function(req,res) {
           curEvent.venue_name,curEvent.venue_address,curEvent.city_name,curEvent.region_name,curEvent.region_abbr,curEvent.postal_code,
           curEvent.country_name,curEvent.country_abbr,curEvent.latitude,curEvent.longitude,curEvent.created,curEvent.modified,curEvent.image.url,keyword];
         console.log(params+ " ");
-        var q2 = "INSERT INTO Advertiser_Analytics.events ( title, url, description, start_time, stop_time, venue_url," +
+        var q2 = "INSERT INTO adv.events ( title, url, description, start_time, stop_time, venue_url," +
             "venue_name,  venue_address, city_name, region_name, region_abbr, postal_code, country_name, country_abbr, latitude, longitude, " +
             "created, modified, image_url,category_id) VALUES (? ,? ,? ,? ,? ,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         mysql.execQuery(q2,params, function(err,results){
@@ -185,7 +166,7 @@ router.get('/searchEvents', function(req,res,next) {
   var keyword = req.param("keyword");
   console.log("keyword user entered is " +keyword );
 
-  var q1 = "SELECT * FROM Advertiser_Analytics.categories";
+  var q1 = "SELECT * FROM adv.categories";
   var params = [];
   var sendBack = function(data) {
     res.send(data);
@@ -214,7 +195,7 @@ router.get('/searchEvents', function(req,res,next) {
                   curEvent.venue_name,curEvent.venue_address,curEvent.city_name,curEvent.region_name,curEvent.region_abbr,curEvent.postal_code,
                   curEvent.country_name,curEvent.country_abbr,curEvent.latitude,curEvent.longitude,curEvent.created,curEvent.modified,curEvent.image.url,results[j].category_id];
                 console.log(params+ " ");
-                var q2 = "INSERT INTO Advertiser_Analytics.events ( title, url, description, start_time, stop_time, venue_url," +
+                var q2 = "INSERT INTO adv.events ( title, url, description, start_time, stop_time, venue_url," +
                     "venue_name,  venue_address, city_name, region_name, region_abbr, postal_code, country_name, country_abbr, latitude, longitude, " +
                     "created, modified, image_url,category_id) VALUES (? ,? ,? ,? ,? ,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
                 mysql.execQuery(q2,params, function(err,results){
@@ -272,6 +253,27 @@ router.get('/categoriesList', function(req,res,next) {
     }
   });
   res.end();
+
+});
+
+router.get('/testcloudsql', function(req, res, next) {
+  var qry = "select * from categories";
+  mysql.fetchData(qry,[],function(err,results) {
+    if(err) {
+      console.log(err);
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      console.log(results.length);
+      var data = {
+        status: "success",
+        totalNoOfStates: results.length,
+        eventCounts: results
+      };
+      res.statusCode = 200;
+      res.send(data);
+    }
+  });
 
 });
 
