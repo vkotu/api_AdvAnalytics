@@ -26,6 +26,27 @@ router.post('/login',
     }
 );
 
+
+router.post('/signup', function(req,res) {
+  var fname = req.param("firstname");
+  var lname = req.param("lastname");
+  var email = req.param("email");
+  var password = req.param("password");
+  var qry = "insert into users (fname,lname,email,password) values (?,?,?,?)";
+  var params = [fname, lname, email, password];
+  mysql.execQuery(qry,params, function(err,results){
+    if(err){
+      res.status(500);
+      res.send({"msg":err});
+      res.end();
+    }
+    else{
+      res.status(200);
+      res.send({"msg":"successfully created user"});
+      res.end();
+    }
+  });
+});
 function updateUserToken(profile,callback) {
   var accessToken = profile.accessToken;
   var getUser = "select * from users where email= ?";
