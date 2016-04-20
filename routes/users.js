@@ -32,7 +32,7 @@ router.post('/getUser', function (req, res) {
   var qry = "select id,fname, lname,email, token,gender,age,city,state,country  from adv.users where token = ?";
   if (token) {
     var params = [token];
-    var finaldata = {};
+    var user;
     mysql.fetchData(qry, params, function (err, results) {
       if (err) {
         res.status(500);
@@ -41,7 +41,7 @@ router.post('/getUser', function (req, res) {
       } else {
         console.log(results);
         if(results.length){
-          finaldata.user = results[0];
+          user = results[0];
           var user_id = results[0].id;
           var sql = "SELECT * FROM adv.interests where userid = ?";
           mysql.fetchData(sql, [user_id], function(err,results) {
@@ -50,9 +50,9 @@ router.post('/getUser', function (req, res) {
               res.send({"msg": "error while fetching data","status":"fail"});
               res.end();
             }else{
-              finaldata.user.interests = results
+              user.interests = results
               res.status(200);
-              res.send({"msg": "found user","status":"success", data: finaldata});
+              res.send({"msg": "found user","status":"success", data: user});
               res.end();
             }
           });
@@ -112,9 +112,6 @@ router.post('/updateProfile', function (req, res) {
 
                 }
               });
-              res.status(200);
-              res.send({"msg": "Updated user","status":"success"});
-              res.end();
             }
           });
         }else{
