@@ -109,7 +109,26 @@ router.post('/updateProfile', function (req, res) {
                   res.send({"msg": "error updating users", "status":"fail", data: results});
                   res.end();
                 }else{
-
+                  var length = interests.length;
+                  var temp = 0;
+                  var sql3 = "insert into interests (userid,category_id,category_name) values(?,?,?);"
+                  for(var i = 0 ; i < length ; i ++) {
+                    var params = [user_id, interests[i].category_id, interests[i].category_name];
+                    mysql.execQuery(sql3,params,function(err, results){
+                      if(err){
+                        res.status(500);
+                        res.send({"msg": "error updating interests", "status":"fail", data: results});
+                        res.end();
+                      }else{
+                        temp++;
+                        if(temp === length){
+                          res.status(200);
+                          res.send({"msg": "updated user","status":"success"});
+                          res.end();
+                        }
+                      }
+                    });
+                  }
                 }
               });
             }
