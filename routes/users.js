@@ -73,8 +73,8 @@ router.post('/getUser', function (req, res) {
 
 router.post('/updateProfile', function (req, res) {
   var token = req.param("token");
-  var fname = req.param("firstname");
-  var lname = req.param("lastname");
+  var fname = req.param("fname");
+  var lname = req.param("lname");
   var email = req.param("email");
   var password = req.param("password");
   var gender = req.param("gender");
@@ -148,8 +148,8 @@ router.post('/updateProfile', function (req, res) {
 });
 
 router.post('/signup', function(req,res) {
-  var fname = req.param("firstname");
-  var lname = req.param("lastname");
+  var fname = req.param("fame");
+  var lname = req.param("lname");
   var email = req.param("email");
   var password = req.param("password");
   var qry = "insert into users (fname,lname,email,password) values (?,?,?,?)";
