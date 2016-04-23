@@ -98,6 +98,29 @@ router.post('/getEventsInStateForCategory', function(req,res) {
   });
 });
 
+router.post('/getEvents', function(req,res) {
+  var category = req.param("category");
+  var qry = "SELECT * FROM adv.events where category_id = ? ";
+  console.log(category);
+  var params = [category];
+  mysql.fetchData(qry,params,function(err,results) {
+    if(err){
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      console.log(results.length);
+      var data = {
+        status: "success",
+        totalNoOfEvents: results.length,
+        events: results
+      }
+      res.statusCode = 200;
+      res.send(data);
+    }
+  });
+});
+
+
 
 
 var errorMessage = function sendError(err){
