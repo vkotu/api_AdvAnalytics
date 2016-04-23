@@ -53,7 +53,7 @@ router.post('/searchEventFulAPI',function(req,res){
 });
 
 
-router.post('/getEventCounts',function(req,res) {
+router.post('/getEventCountsByCategory',function(req,res) {
   var category = req.param("category");
   category = category.trim();
   var qry = "select region_name, region_abbr, count(*) as noOfEvents from events where category_id = ? group by region_abbr , region_name";
@@ -103,7 +103,7 @@ router.post('/geo_instate_count',function(req,res) {
 router.post('/geo_instate_categoryCount',function(req,res) {
   var state = req.param("state");
   state = state.trim();
-  var qry = "select category_id as name , count(*) as value from adv.events where region_abbr = ? group by category_id";
+  var qry = "select category_id as name , count(*) as value from adv.events where region_name = ? group by category_id";
   mysql.fetchData(qry,[state],function(err,results){
     if(err) {
       console.log(err);
