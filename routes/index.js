@@ -100,7 +100,7 @@ router.post('/geo_instate_count',function(req,res) {
   });
 });
 
-router.post('/geo_instate_eventCount',function(req,res) {
+router.post('/geo_instate_categoryCount',function(req,res) {
   var state = req.param("state");
   state = state.trim();
   var qry = "select category_id as name , count(*) as value from adv.events where region_abbr = ? group by category_id";
