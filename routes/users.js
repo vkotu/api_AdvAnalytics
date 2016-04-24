@@ -154,10 +154,11 @@ router.post('/updateProfile', function (req, res) {
 });
 
 router.post('/signup', function(req,res) {
-  var fname = req.param("fame");
+  var fname = req.param("fname");
   var lname = req.param("lname");
   var email = req.param("email");
   var password = req.param("password");
+  console.log(fname,lname);
   var qry = "insert into users (fname,lname,email,password) values (?,?,?,?)";
   var params = [fname, lname, email, password];
   mysql.execQuery(qry,params, function(err,results){
