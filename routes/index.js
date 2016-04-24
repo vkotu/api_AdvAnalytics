@@ -122,6 +122,143 @@ router.post('/geo_instate_categoryCount',function(req,res) {
 });
 
 
+router.post('/demographics_age', function(req,res){
+  var categoryid = req.param("category_id");
+  var qry = "SELECT audience_id  FROM adv.audience_interests where interest_name = ?";
+  var data = {
+    status: "success",
+    male:{
+      "18-24" : 0,
+      "25-34" : 0,
+      "35-44" : 0,
+      "45-54" : 0,
+      "55-64" : 0,
+      "65+" : 0
+    },
+    female:{
+      "18-24" : 0,
+      "25-34" : 0,
+      "35-44" : 0,
+      "45-54" : 0,
+      "55-64" : 0,
+      "65+" : 0
+    },
+  };
+  mysql.fetchData(qry,[categoryid],function(err,results){
+    if(err){
+      console.log(err);
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      var audiences = results;
+      console.log(results);
+      var audienceids = "";
+      for(var val in audiences){
+        audienceids +=  audiences[val].audience_id+ ",";
+      }
+      audienceids = audienceids.replace(/,$/,"");
+      var sql = "select gender ,count(*) as count from audience where audience_id in ("+audienceids+") and age >= 18 && age <=24 group by gender ;"
+      mysql.fetchData(sql,[],function(err,results){
+        if(err){
+          console.log(err);
+          res.statusCode = 500;
+          res.send(errorMessage(err));
+        }else{
+          for(val in results){
+            if(results[val].gender === "male"){
+              data.male["18-24"] = results[val].count;
+            }else{
+              data.female["18-24"] = results[val].count;
+            }
+          }
+          var sql1 = "select gender ,count(*) as count from audience where audience_id in ("+audienceids+") and age >= 25 && age <=34 group by gender ;"
+          mysql.fetchData(sql1,[],function(err,results){
+            if(err){
+              console.log(err);
+              res.statusCode = 500;
+              res.send(errorMessage(err));
+            }else{
+              for(val in results){
+                if(results[val].gender === "male"){
+                  data.male["25-34"] = results[val].count;
+                }else{
+                  data.female["25-34"] = results[val].count;
+                }
+              }
+              var sql = "select gender ,count(*) as count from audience where audience_id in ("+audienceids+") and age >= 35 && age <=44 group by gender ;"
+              mysql.fetchData(sql,[],function(err,results){
+                if(err){
+                  console.log(err);
+                  res.statusCode = 500;
+                  res.send(errorMessage(err));
+                }else{
+                  for(val in results){
+                    if(results[val].gender === "male"){
+                      data.male["35-44"] = results[val].count;
+                    }else{
+                      data.female["35-44"] = results[val].count;
+                    }
+                  }
+                  var sql = "select gender ,count(*) as count from audience where audience_id in ("+audienceids+") and age >= 45 && age <=54 group by gender ;"
+                  mysql.fetchData(sql,[],function(err,results){
+                    if(err){
+                      console.log(err);
+                      res.statusCode = 500;
+                      res.send(errorMessage(err));
+                    }else{
+                      for(val in results){
+                        if(results[val].gender === "male"){
+                          data.male["45-54"] = results[val].count;
+                        }else{
+                          data.female["45-54"] = results[val].count;
+                        }
+                      }
+                      var sql = "select gender ,count(*) as count from audience where audience_id in ("+audienceids+") and age >= 55 && age <=64 group by gender ;"
+                      mysql.fetchData(sql,[],function(err,results){
+                        if(err){
+                          console.log(err);
+                          res.statusCode = 500;
+                          res.send(errorMessage(err));
+                        }else{
+                          for(val in results){
+                            if(results[val].gender === "male"){
+                              data.male["55-64"] = results[val].count;
+                            }else{
+                              data.female["55-64"] = results[val].count;
+                            }
+                          }
+                          var sql = "select gender ,count(*) as count from audience where audience_id in ("+audienceids+") and age >= 65 group by gender ;"
+                          mysql.fetchData(sql,[],function(err,results){
+                            if(err){
+                              console.log(err);
+                              res.statusCode = 500;
+                              res.send(errorMessage(err));
+                            }else{
+                              for(val in results){
+                                if(results[val].gender === "male"){
+                                  data.male["65+"] = results[val].count;
+                                }else{
+                                  data.female["65+"] = results[val].count;
+                                }
+                              }
+                              res.statusCode = 200;
+                              res.send(data);
+                            }
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  });
+});
+
 router.post('/getEventsInStateForCategory', function(req,res) {
   var category = req.param("category");
   var state = req.param("state");
