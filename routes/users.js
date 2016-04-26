@@ -83,16 +83,81 @@ router.post('/follow', function(req,res) {
       res.end();
     }else{
       if(results.length>0){
-        var qry = "insert into interests (userid,category_id,category_name) values (?,?,?)";
-        mysql.execQuery(qry,[results[0].id,category,category_name],function(err,results){
-          if(err) {
+        var userid = results[0].id;
+        var sql1 = "select userid from adv.interests where userid = ? and category_id = ? ";
+        mysql.fetchData(sql1,[results[0].id, category],function(err,results){
+          if(err){
             res.status(500);
             res.send({"msg": err,"status":"fail"});
             res.end();
           }else{
-            res.status(200);
-            res.send({"msg": "updated user interests","status":"success"});
+            if(results.length){
+              res.status(500);
+              res.send({"msg": "Already Following","status":"fail"});
+              res.end();
+            }else{
+              var qry = "insert into interests (userid,category_id,category_name) values (?,?,?)";
+              mysql.execQuery(qry,[userid,category,category_name],function(err,results){
+                if(err) {
+                  res.status(500);
+                  res.send({"msg": err,"status":"fail"});
+                  res.end();
+                }else{
+                  res.status(200);
+                  res.send({"msg": "updated user interests","status":"success"});
+                  res.end();
+                }
+              });
+            }
+          }
+        });
+      }else{
+        res.status(500);
+        res.send({"msg": "User not exists or token expired, please login again", "status":"fail",});
+        res.end();
+      }
+    }
+  });
+});
+
+router.post('/unfollow',function(req,res){
+  var category = req.param("category_id");
+  var token = req.param("token");
+  var email = req.param("email");
+  var sql = "select id from users where token = ? and email = ?";
+  mysql.fetchData(sql, [token,email], function(err,results){
+    if(err){
+      res.status(500);
+      res.send({"msg": err,"status":"fail"});
+      res.end();
+    }else{
+      if(results.length>0){
+        var sql1 = "select userid from adv.interests where userid = ? and category_id = ?";
+        var userid = results[0].id;
+        mysql.fetchData(sql1,[userid, category],function(err,results){
+          if(err){
+            res.status(500);
+            res.send({"msg": err,"status":"fail"});
             res.end();
+          }else{
+            if(!results.length){
+              res.status(500);
+              res.send({"msg": "user not Following the category to remove","status":"fail"});
+              res.end();
+            }else{
+              var qry = "delete from adv.interests  where userid = ? and category_id = ?"
+              mysql.execQuery(qry,[userid,category],function(err,results){
+                if(err) {
+                  res.status(500);
+                  res.send({"msg": err,"status":"fail"});
+                  res.end();
+                }else{
+                  res.status(200);
+                  res.send({"msg": "removed user interests","status":"success"});
+                  res.end();
+                }
+              });
+            }
           }
         });
       }else{
