@@ -70,6 +70,39 @@ router.post('/getUser', function (req, res) {
   }
 });
 
+router.post('/follow', function(req,res) {
+  var category = req.param("category_id");
+  var category_name = req.param("category_name");
+  var token = req.param("token");
+  var email = req.param("email");
+  var sql = "select id from users where token = ? and email = ?";
+  mysql.fetchData(sql, [token,email], function(err,results){
+    if(err){
+      res.status(500);
+      res.send({"msg": err,"status":"fail"});
+      res.end();
+    }else{
+      if(results.length>0){
+        var qry = "insert into interests (userid,category_id,category_name) values (?,?,?)";
+        mysql.execQuery(qry,[results[0].id,category,category_name],function(err,results){
+          if(err) {
+            res.status(500);
+            res.send({"msg": err,"status":"fail"});
+            res.end();
+          }else{
+            res.status(200);
+            res.send({"msg": "updated user interests","status":"success"});
+            res.end();
+          }
+        });
+      }else{
+        res.status(500);
+        res.send({"msg": "User not exists or token expired, please login again", "status":"fail",});
+        res.end();
+      }
+    }
+  });
+});
 
 router.post('/updateProfile', function (req, res) {
   var token = req.param("token");
@@ -159,18 +192,33 @@ router.post('/signup', function(req,res) {
   var email = req.param("email");
   var password = req.param("password");
   console.log(fname,lname);
-  var qry = "insert into users (fname,lname,email,password) values (?,?,?,?)";
-  var params = [fname, lname, email, password];
-  mysql.execQuery(qry,params, function(err,results){
+  var sql = "select email from adv.users where email = ?";
+  mysql.fetchData(sql,[email],function(err,results){
     if(err){
       res.status(500);
       res.send({"msg":err,"status":"fail"});
       res.end();
-    }
-    else{
-      res.status(200);
-      res.send({"msg":"successfully created user","status":"success"});
-      res.end();
+    }else{
+      if(results.length > 0) {
+        res.status(500);
+        res.send({"msg":"Email already exists","status":"fail"});
+        res.end();
+      }else{
+        var qry = "insert into users (fname,lname,email,password) values (?,?,?,?)";
+        var params = [fname, lname, email, password];
+        mysql.execQuery(qry,params, function(err,results){
+          if(err){
+            res.status(500);
+            res.send({"msg":err,"status":"fail"});
+            res.end();
+          }
+          else{
+            res.status(200);
+            res.send({"msg":"successfully created user","status":"success"});
+            res.end();
+          }
+        });
+      }
     }
   });
 });
