@@ -311,6 +311,29 @@ router.post('/getEvents', function(req,res) {
   });
 });
 
+router.post('/getEventsInCity', function(req,res) {
+  var state = req.param("state");
+  var qry = "select city_name , count(*) as value from events where region_name = ? group by city_name";
+  var params = [state];
+  mysql.fetchData(qry,params,function(err,results) {
+    if(err){
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      var citydata = {};
+      for(var val in results){
+        citydata[results[val].city_name] = results[val].value;
+      }
+      console.log(results.length);
+      var finaldata = {
+        status: "success",
+        data: citydata
+      };
+      res.statusCode = 200;
+      res.send(finaldata);
+    }
+  });
+});
 
 
 
