@@ -128,20 +128,20 @@ router.post('/demographics_age', function(req,res){
   var data = {
     status: "success",
     male:{
-      "18-24" : 0,
-      "25-34" : 0,
-      "35-44" : 0,
-      "45-54" : 0,
-      "55-64" : 0,
-      "65+" : 0
+      "18-24" : 1,
+      "25-34" : 2,
+      "35-44" : 3,
+      "45-54" : 4,
+      "55-64" : 5,
+      "65+" : 6
     },
     female:{
-      "18-24" : 0,
-      "25-34" : 0,
-      "35-44" : 0,
-      "45-54" : 0,
-      "55-64" : 0,
-      "65+" : 0
+      "18-24" : 1,
+      "25-34" : 2,
+      "35-44" : 3,
+      "45-54" : 4,
+      "55-64" : 5,
+      "65+" : 6
     },
   };
   mysql.fetchData(qry,[categoryid],function(err,results){
@@ -262,7 +262,7 @@ router.post('/demographics_age', function(req,res){
 router.post('/getEventsInStateForCategory', function(req,res) {
   var category = req.param("category");
   var state = req.param("state");
-  var qry = "SELECT * FROM adv.events where category_id = ? and region_abbr = ?";
+  var qry = "SELECT * FROM adv.events where category_id = ? and region_name = ?";
   var params = [category, state];
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
@@ -330,6 +330,35 @@ Ignore all end points below,  for internal purpose only
 
 
  */
+
+router.post('/insertInterests',function(req,res){
+  var qry = "SELECT * FROM adv.categories";
+  mysql.fetchData(qry,[],function(err,results) {
+    if(err){
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      for(var i in results) {
+        var cat = results[i].category_id;
+        var sql = "insert into audience_interests (interest_name,audience_id) values(?,?)";
+        for(i=1; i<= 17; i++){
+          mysql.execQuery(sql,[cat,i],function(err,results){
+            if(err){
+              res.statusCode = 500;
+              res.send(errorMessage(err));
+            }else{
+              if(i === (results.length-1)){
+                res.statusCode = 200;
+                res.send(data);
+              }
+            }
+          });
+        }
+      }
+    }
+  });
+});
+
 
 router.post('/searchAndInsertCategory',function(req,res) {
   var keyword = req.param("keyword");
