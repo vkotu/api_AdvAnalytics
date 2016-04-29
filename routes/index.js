@@ -313,8 +313,9 @@ router.post('/getEvents', function(req,res) {
 
 router.post('/getEventsInCity', function(req,res) {
   var state = req.param("state");
-  var qry = "select city_name , count(*) as value from events where region_name = ? group by city_name";
-  var params = [state];
+  var category_id = req.param("category_id");
+  var qry = "select city_name , count(*) as value from events where region_name = ?  and category_id = ? group by city_name";
+  var params = [state,category_id];
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
       res.statusCode = 500;
