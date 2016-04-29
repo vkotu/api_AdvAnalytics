@@ -283,9 +283,17 @@ router.post('/getEventsInStateForCategory', function(req,res) {
 
 router.post('/getEvents', function(req,res) {
   var category = req.param("category");
-  var qry = "SELECT * FROM adv.events where category_id = ? ";
+  var state = req.param("state");
+  var qry;
+  var params;
+  if(state){
+    qry   = "SELECT * FROM adv.events where category_id = ? and region_name = ?";
+    params = [category,state];
+  }else{
+    qry = "SELECT * FROM adv.events where category_id = ? ";
+    params = [category];
+  }
   console.log(category);
-  var params = [category];
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
       res.statusCode = 500;
