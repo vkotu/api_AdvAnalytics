@@ -7,6 +7,7 @@ var bodyParser = require('body-parser');
 var mysql = require('./routes/mysql');
 var routes = require('./routes/index');
 var users = require('./routes/users');
+//var twitterAPI = require('./routes/twitter');
 var secretKey = "venkat";
 var app = express();
 
@@ -34,6 +35,7 @@ var passport = require('passport');
 
 app.use('/', routes);
 app.use('/users', users);
+//app.use('/twit',twitterAPI);
 
 passport.use(new LocalStrategy({usernameField: 'email',passwordField: 'password',session:false,passReqToCallback:true},
     function(req,username, password, done) {

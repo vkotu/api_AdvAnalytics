@@ -5,7 +5,119 @@ var eventful = require('eventful-node');
 var client = new eventful.Client("gFNTdP3rLVhWS6rw");
 var mysql = require('./mysql');
 var Promise = require('promise');
+var Twit = require('twit');
+var sentimentAnalysis = require('sentiment-analysis');
 
+var T = new Twit({
+  consumer_key:         'Y62466vWGYk4ZLLXMTgeEWCP2',
+  consumer_secret:      '0LN9VcFwgRmIlUwRTNFIFnqZUZmW7OEDMXrzLccoe3pHT2kuX3',
+  access_token:         '1569590946-Q1NKHAmVLil5fVzrvtKsuj7rqY9s4Cy7mhkFCR6',
+  access_token_secret:  'hDJ8kgI9vpvtHiYqhvTPewJWRTVTifKWqwLteAiQIiEGi',
+  timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
+});
+
+//kiran credentials
+var T1 = new Twit({
+  consumer_key:         'dWyPxnoPbmghErLht5DXiCkPq',
+  consumer_secret:      'TXQdQvaHtNYYJ7SjtJsd8bIR3qIjbziVwyjOIp6znEpdeQKaVI',
+  access_token:         '3300096272-rn0Z0nIHng3mUvqtkeLMaZ1dZFrMsYxVMhYq01x',
+  access_token_secret:  '5NHVOJKAE9iExcxnvPYzVvwvHkh8r8p184u2AZVJoDwKg',
+  timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
+});
+
+
+
+router.post('/twitsearch',function(req,res){
+  var category = req.param("category");
+  var state = req.param("state");
+  var qry;
+  var params;
+  if(state){
+    qry   = "SELECT * FROM adv.events where category_id = ? and region_name = ?";
+    params = [category,state];
+  }else{
+    qry = "SELECT * FROM adv.events where category_id = ?";
+    params = [category];
+  }
+  var sql_qry = "update events set score = ? where id = ?";
+  console.log("category=>" + category);
+  mysql.fetchData(qry,params,function(err,results) {
+    if(err){
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else{
+      console.log("length=> " +results.length);
+      var eventsScore = {};
+      var count = 0;
+      for(var i in results) {
+        (function(i){
+          var title = results[i].title;
+          //T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+          T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            if(err){
+              console.log(err);
+              res.send(err);
+            }else{
+             // console.log(data);
+              var statuses = data.statuses;
+             // console.log("initial length=> "+statuses.length);
+              var op = {};
+              var score = 0;
+              if(statuses.length>0){
+                for(var j in statuses) {
+                  (function(j){
+                    score += sentimentAnalysis(statuses[j].text);
+                    //console.log("j is" + j);
+                    //console.log("statuses.length=>" + statuses.length);
+                    if(parseInt(j) === (statuses.length - 1)){
+                      count++;
+                      eventsScore[title] = Math.round(score);
+                      mysql.execQuery(sql_qry,[Math.round(score),results[i].id],function(err,resl){
+                        if(err){
+                          console.log(err);
+                        }else{
+
+                        }
+                      });
+                      console.log("for event "+ i + " "+ title + " " + eventsScore[title]);
+                      console.log("count is " + count + " and results.length is"  + results.length);
+                      if(parseInt(count) === (results.length-1)) {
+                        var data = {
+                          status: "success",
+                          eventScore: eventsScore
+                        };
+                        res.statusCode = 200;
+                        res.send(data);
+                      }
+                    }
+                  })(j);
+                }
+              }else{
+                count++;
+                console.log("count is " + count + " and results.length is"  + results.length);
+                eventsScore[title] = 0;
+                if(parseInt(count) === (results.length-1)) {
+                  var data = {
+                    status: "success",
+                    eventScore: eventsScore
+                  };
+                  res.statusCode = 200;
+                  res.send(data);
+                }
+              }
+            }
+          });
+        })(i);
+      };
+    }
+  });
+});
+
+router.post('/getSentiment',function(req,res){
+  console.log(sentimentAnalysis('Dinosaurs are awesome!'));
+  console.log(sentimentAnalysis('Video: HIGHLIGHTS: San Jose Earthquak... https://t.co/etaqqv5eEd via https://t.co/lt1jPDz9PV'));
+  res.end();
+});
 
 /* GET home page. */
 
@@ -103,7 +215,7 @@ router.post('/geo_instate_count',function(req,res) {
 router.post('/geo_instate_categoryCount',function(req,res) {
   var state = req.param("state");
   state = state.trim();
-  var qry = "select category_id as name , count(*) as value , count(*) as y from adv.events where region_name = ? group by category_id";
+  var qry = "select category_id as name , count(*) as value , count(*) as y from adv.events where region_name = ? group by category_id ";
   mysql.fetchData(qry,[state],function(err,results){
     if(err) {
       console.log(err);
@@ -262,7 +374,7 @@ router.post('/demographics_age', function(req,res){
 router.post('/getEventsInStateForCategory', function(req,res) {
   var category = req.param("category");
   var state = req.param("state");
-  var qry = "SELECT * FROM adv.events where category_id = ? and region_name = ?";
+  var qry = "SELECT * FROM adv.events where category_id = ? and region_name = ? order by score desc";
   var params = [category, state];
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
@@ -287,10 +399,10 @@ router.post('/getEvents', function(req,res) {
   var qry;
   var params;
   if(state){
-    qry   = "SELECT * FROM adv.events where category_id = ? and region_name = ?";
+    qry   = "SELECT * FROM adv.events where category_id = ? and region_name = ? order by score desc";
     params = [category,state];
   }else{
-    qry = "SELECT * FROM adv.events where category_id = ? ";
+    qry = "SELECT * FROM adv.events where category_id = ? order by score desc";
     params = [category];
   }
   console.log(category);
@@ -314,7 +426,7 @@ router.post('/getEvents', function(req,res) {
 router.post('/getEventsInCity', function(req,res) {
   var state = req.param("state");
   var category_id = req.param("category_id");
-  var qry = "select city_name , count(*) as value from events where region_name = ?  and category_id = ? group by city_name";
+  var qry = "select city_name , count(*) as value from events where region_name = ?  and category_id = ? group by city_name order by score desc";
   var params = [state,category_id];
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
