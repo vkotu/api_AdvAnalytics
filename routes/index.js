@@ -7,6 +7,9 @@ var mysql = require('./mysql');
 var Promise = require('promise');
 var Twit = require('twit');
 var sentimentAnalysis = require('sentiment-analysis');
+var sentiment = require('sentiment');
+
+var Categories = require('./categories');
 
 var T = new Twit({
   consumer_key:         'Y62466vWGYk4ZLLXMTgeEWCP2',
@@ -27,7 +30,7 @@ var T1 = new Twit({
 
 
 
-router.post('/twitsearch',function(req,res){
+router.post('/getScores',function(req,res){
   var category = req.param("category");
   var state = req.param("state");
   var qry;
@@ -39,84 +42,176 @@ router.post('/twitsearch',function(req,res){
     qry = "SELECT * FROM adv.events where category_id = ?";
     params = [category];
   }
-  var sql_qry = "update events set score = ? where id = ?";
+  var sql_qry = "update events set score = ? , comparative = ? where id = ?";
   console.log("category=>" + category);
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
       res.statusCode = 500;
       res.send(errorMessage(err));
-    }else{
+    }else {
       console.log("length=> " +results.length);
       var eventsScore = {};
       var count = 0;
-      for(var i in results) {
-        (function(i){
-          var title = results[i].title;
-          //T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
-          T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
-            if(err){
-              console.log(err);
-              res.send(err);
-            }else{
-             // console.log(data);
-              var statuses = data.statuses;
-             // console.log("initial length=> "+statuses.length);
-              var op = {};
-              var score = 0;
-              if(statuses.length>0){
-                for(var j in statuses) {
-                  (function(j){
-                    score += sentimentAnalysis(statuses[j].text);
-                    //console.log("j is" + j);
-                    //console.log("statuses.length=>" + statuses.length);
-                    if(parseInt(j) === (statuses.length - 1)){
-                      count++;
-                      eventsScore[title] = Math.round(score);
-                      mysql.execQuery(sql_qry,[Math.round(score),results[i].id],function(err,resl){
-                        if(err){
-                          console.log(err);
-                        }else{
-
-                        }
-                      });
-                      console.log("for event "+ i + " "+ title + " " + eventsScore[title]);
-                      console.log("count is " + count + " and results.length is"  + results.length);
-                      if(parseInt(count) === (results.length-1)) {
-                        var data = {
-                          status: "success",
-                          eventScore: eventsScore
-                        };
-                        res.statusCode = 200;
-                        res.send(data);
-                      }
-                    }
-                  })(j);
-                }
+      if(results.length) {
+        for(var i in results) {
+          (function(i){
+            var title = results[i].title;
+            T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            //T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+              if(err){
+                console.log(err);
+                res.send(err);
               }else{
-                count++;
-                console.log("count is " + count + " and results.length is"  + results.length);
-                eventsScore[title] = 0;
-                if(parseInt(count) === (results.length-1)) {
-                  var data = {
-                    status: "success",
-                    eventScore: eventsScore
-                  };
-                  res.statusCode = 200;
-                  res.send(data);
+                // console.log(data);
+                var statuses = data.statuses;
+                // console.log("initial length=> "+statuses.length);
+                var op = {};
+                var sentimentReport;
+                var score = 0;
+                var comparative = 0;
+                if(statuses.length>0){
+                  for(var j in statuses) {
+                    (function(j){
+                      sentimentReport = sentiment(statuses[j].text);
+                      score += parseInt(sentimentReport.score);
+                      comparative += (sentimentReport.comparative);
+                      //console.log("statuses.length=>" + statuses.length);
+                      if(parseInt(j) === (statuses.length - 1)){
+                        count++;
+                        eventsScore[title] = {score: Math.round(score) , comparative: comparative};
+                      //  console.log("Score and comparatvie for"+ title);
+                       // console.log(eventsScore[title]);
+                        console.log([Math.round(score),Math.round(comparative * 1000) / 1000,results[i].id]);
+                        mysql.execQuery(sql_qry,[Math.round(score),Math.round(comparative * 1000) / 1000,results[i].id],function(err,resl){
+                          if(err){
+                            console.log(err);
+                          }else{
+
+                          }
+                        });
+                       // console.log("count is " + count + " and results.length is"  + results.length);
+                        if(parseInt(count) === (results.length-1)) {
+                          var data = {
+                            status: "success",
+                            eventScore: eventsScore
+                          };
+                          res.statusCode = 200;
+                          res.send(data);
+                        }
+                      }
+                    })(j);
+                  }
+                }else{
+                  count++;
+                  console.log("count is " + count + " and results.length is"  + results.length);
+                  eventsScore[title] = 0;
+                  if(parseInt(count) === (results.length-1)) {
+                    var data = {
+                      status: "success",
+                      eventScore: eventsScore
+                    };
+                    res.statusCode = 200;
+                    res.send(data);
+                  }
                 }
               }
-            }
-          });
-        })(i);
-      };
+            });
+          })(i);
+        };
+      }else{
+        res.statusCode = 500;
+        res.send(errorMessage("Category not found"));
+      }
     }
   });
 });
 
-router.post('/getSentiment',function(req,res){
-  console.log(sentimentAnalysis('Dinosaurs are awesome!'));
-  console.log(sentimentAnalysis('Video: HIGHLIGHTS: San Jose Earthquak... https://t.co/etaqqv5eEd via https://t.co/lt1jPDz9PV'));
-  res.end();
+router.post('/findCategory', function (req, res) {
+  var name = req.param("name");
+  var category = req.param("category");
+  var targetCategory="";
+  var categoryString = Categories.csvOfCategories;
+  for (var obj in Categories.categories) {
+    console.log(name.indexOf(obj));
+    console.log(category.indexOf(obj));
+    if (name.indexOf(obj) > 0 || category.indexOf(obj) > 0) {
+      //console.log("="+obj);
+      targetCategory = obj;
+      break;
+    }
+  }
+  if (!targetCategory) {
+    var hashTags = {};
+    console.log("not found");
+    T.get('search/tweets', {q: '%23' + name + ' %23' + category, count: 100}, function (err, data, response) {
+      // console.log(data);
+      var statuses = data.statuses;
+      if (statuses.length) {
+        // console.log("statuses exists");
+        for (var i in statuses) {
+          var twet = statuses[i];
+          if (twet.hasOwnProperty("entities")) {
+            var entities = twet.entities;
+            if (entities.hasOwnProperty("hashtags")) {
+              //   console.log(entities);
+              // console.log("entities exists");
+              var tags = entities.hashtags;
+              for (var j in tags) {
+                //console.log(tags[j]);
+                if (!hashTags.hasOwnProperty(tags[j].text)) {
+                  hashTags[tags[j].text] = 1;
+                }
+              }
+            }
+          }
+        }
+        for (var key in hashTags) {
+          //console.log(key + "==>>>>");
+          //console.log(Categories.csvOfCategories);
+          //console.log("***************************")
+          key = key.toLowerCase();
+          var index = categoryString.indexOf(key.toLowerCase());
+          if (index > 0) {
+            for (var i = index; i < categoryString.length; i++) {
+              if (categoryString[i] === ",") {
+                break;
+              }
+              targetCategory += categoryString[i];
+            }
+            if(Categories.categories.hasOwnProperty(targetCategory)){
+              break;
+            }else{
+              targetCategory = "";
+            }
+          }
+        }
+        res.send({
+          targetCategory: targetCategory
+        });
+      } else {
+        var data = {
+          status: "fail",
+          msg: "Cannot find the category"
+        };
+        res.statusCode = 200;
+        res.send(data);
+      }
+    });
+  }
+});
+
+router.post('/searchTwitter',function(req,res){
+  T.get('search/tweets', { q: '%23guitar', count: 100 }, function(err, data, response) {
+    console.log(data);
+    res.send(data);
+  });
+});
+
+router.post('/testSentiment',function(req,res){
+  var text = req.param("text")
+  //var txt = "Cats are stupid";
+  var r1 = sentiment(text);
+  res.send(r1);
 });
 
 /* GET home page. */
