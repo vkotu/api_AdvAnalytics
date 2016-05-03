@@ -8,6 +8,7 @@ var Promise = require('promise');
 var Twit = require('twit');
 var sentimentAnalysis = require('sentiment-analysis');
 var sentiment = require('sentiment');
+var kmeans = require('node-kmeans');
 
 var Categories = require('./categories');
 
@@ -255,10 +256,30 @@ router.post('/findCategory', function (req, res) {
             res.statusCode = 500;
             res.send(errorMessage(err));
           }else{
-            res.send({
-              targetCategory: comesUnderCategory,
-              events: results
-            });
+            if(results.length === 0 ){
+              res.send({
+                status: fail,
+                msg: "No events found",
+                events: []
+              });
+            }else{
+              var vectors = new Array();
+              for(var n = 0 ; n< results.length ; n++){
+                vectors[n] = [results[n]['score'],results[n]['comparative']];
+              }
+              kmeans.clusterize(vectors, {k:2}, function(err,cres) {
+                if(err) {
+                  console.log(err);
+                }else{
+                  console.log(cres[0].centroid);
+                  res.send({
+                    targetCategory: comesUnderCategory,
+                    events: results,
+                    clusterResponse:cres
+                  });
+                }
+              });
+            }
           }
         });
       } else {
