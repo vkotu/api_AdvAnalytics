@@ -128,23 +128,54 @@ router.post('/getScores',function(req,res){
 
 router.post('/findCategory', function (req, res) {
   var name = req.param("name");
-  var category = req.param("category");
-  var targetCategory="";
-  var categoryString = Categories.csvOfCategories;
-  for (var obj in Categories.categories) {
-    console.log(name.indexOf(obj));
-    console.log(category.indexOf(obj));
-    if (name.indexOf(obj) > 0 || category.indexOf(obj) > 0) {
-      //console.log("="+obj);
-      targetCategory = obj;
-      break;
+  var inputValues = name.split(/\s+/);
+  var qryToTwitter = "";
+  for(var val in inputValues){
+    if(parseInt(val) === inputValues.length-1){
+      qryToTwitter += "%23" + inputValues[val];
+    }else{
+      qryToTwitter += "%23" + inputValues[val] + "+";
     }
   }
-  if (!targetCategory) {
+  var category = req.param("category");
+  var targetCategory={};
+  var comesUnderCategory=[] ;
+  var categoryString = Categories.csvOfCategories;
+  for (var obj in Categories.categories) {
+   // console.log(name.indexOf(obj));
+    //console.log(category.indexOf(obj));
+    if (obj.indexOf(name) > 0 || obj.indexOf(category) > 0) {
+      //console.log("="+obj);
+      comesUnderCategory.push(obj);
+      var queryString = "SELECT * FROM adv.events where"
+      for(var keyVal in comesUnderCategory) {
+        if(parseInt(keyVal) === comesUnderCategory.length-1){
+          queryString += " category_id = ? "
+        }else{
+          queryString += " category_id = ? or"
+        }
+      }
+      queryString += " order by score desc";
+      mysql.fetchData(queryString,comesUnderCategory,function(err,results){
+        if(err){
+          console.log(err);
+          res.statusCode = 500;
+          res.send(errorMessage(err));
+        }else{
+          res.send({
+            targetCategory: comesUnderCategory,
+            events: results
+          });
+        }
+      });
+    }
+  }
+  if (comesUnderCategory.length === 0) {
     var hashTags = {};
     console.log("not found");
-    T.get('search/tweets', {q: '%23' + name + ' %23' + category, count: 100}, function (err, data, response) {
-      // console.log(data);
+    console.log(qryToTwitter);
+    T.get('search/tweets', {q: qryToTwitter, count: 100}, function (err, data, response) {
+      console.log(response);
       var statuses = data.statuses;
       if (statuses.length) {
         // console.log("statuses exists");
@@ -158,40 +189,83 @@ router.post('/findCategory', function (req, res) {
               var tags = entities.hashtags;
               for (var j in tags) {
                 //console.log(tags[j]);
-                if (!hashTags.hasOwnProperty(tags[j].text)) {
-                  hashTags[tags[j].text] = 1;
+                var tempText  =tags[j].text.toLowerCase()
+                if (hashTags.hasOwnProperty(tempText)) {
+                  hashTags[tempText] += 1;
+                }else{
+                  hashTags[tempText] = 1;
                 }
               }
             }
           }
         }
+        console.log(hashTags);
         for (var key in hashTags) {
-          //console.log(key + "==>>>>");
-          //console.log(Categories.csvOfCategories);
+          var tempKeyWord = "";
+         // console.log(key + "==>>>>" +hashTags[key]);
           //console.log("***************************")
-          key = key.toLowerCase();
-          var index = categoryString.indexOf(key.toLowerCase());
-          if (index > 0) {
-            for (var i = index; i < categoryString.length; i++) {
-              if (categoryString[i] === ",") {
-                break;
-              }
-              targetCategory += categoryString[i];
-            }
-            if(Categories.categories.hasOwnProperty(targetCategory)){
-              break;
-            }else{
-              targetCategory = "";
+          if(key.length >= 3) {
+            var index = categoryString.indexOf(key);
+            if (index >= 0) {
+              //console.log(key + "==>>>>");
+              //console.log(key + "==>>>>" +hashTags[key]);
+              //console.log(Categories.csvOfCategories);
+              //console.log("***************************");
+              //for (var i = index; i < categoryString.length; i++) {
+              //  if (categoryString[i] === ",") {
+              //    break;
+              //  }
+              //  tempKeyWord += categoryString[i];
+              //}
+              targetCategory[key] = hashTags[key];
+              console.log(targetCategory);
             }
           }
         }
-        res.send({
-          targetCategory: targetCategory
+        var sortable = [];
+        for (var category in targetCategory)
+          sortable.push([category, targetCategory[category]])
+        sortable.sort(function (a, b) {
+          return b[1] - a[1];
+        });
+        console.log(sortable);
+        for(var ar in sortable){
+          var checkCategory = sortable[ar][0];
+          //console.log("============");
+          //console.log(checkCategory);
+          for(var ke in Categories.categories){
+            //console.log(ke+ "=" + "checkCategory" + ke.indexOf(checkCategory) );
+            if(ke.indexOf(checkCategory) >= 0) {
+              comesUnderCategory.push(ke);
+            }
+          }
+        }
+        var queryString = "SELECT * FROM adv.events where"
+        for(var keyVal in comesUnderCategory) {
+          if(parseInt(keyVal) === comesUnderCategory.length-1){
+            queryString += " category_id = ? "
+          }else{
+            queryString += " category_id = ? or"
+          }
+        }
+        queryString += " order by score desc";
+        mysql.fetchData(queryString,comesUnderCategory,function(err,results){
+          if(err){
+            console.log(err);
+            res.statusCode = 500;
+            res.send(errorMessage(err));
+          }else{
+            res.send({
+              targetCategory: comesUnderCategory,
+              events: results
+            });
+          }
         });
       } else {
         var data = {
           status: "fail",
-          msg: "Cannot find the category"
+          msg: "Cannot find the category",
+
         };
         res.statusCode = 200;
         res.send(data);
@@ -201,7 +275,7 @@ router.post('/findCategory', function (req, res) {
 });
 
 router.post('/searchTwitter',function(req,res){
-  T.get('search/tweets', { q: '%23guitar', count: 100 }, function(err, data, response) {
+  T.get('search/tweets', {q: '%23' + "hp beats" , count: 100}, function (err, data, response){
     console.log(data);
     res.send(data);
   });
@@ -638,7 +712,7 @@ router.post('/searchAndInsertCategory',function(req,res) {
   });
 });
 
-router.get('/updateEvents', function(req,res,next) {
+router.post('/updateEvents', function(req,res,next) {
   var keyword = req.param("keyword");
   console.log("keyword user entered is " +keyword );
 
@@ -708,7 +782,7 @@ router.get('/updateEvents', function(req,res,next) {
 });
 
 
-router.get('/categoriesList', function(req,res,next) {
+router.post('/categoriesList', function(req,res,next) {
   console.log(req.query.category);
   client.listCategories(function(err, data){
 
@@ -741,7 +815,7 @@ router.get('/categoriesList', function(req,res,next) {
 
 });
 
-router.get('/testcloudsql', function(req, res, next) {
+router.post('/testcloudsql', function(req, res, next) {
   var qry = "select * from categories";
   mysql.fetchData(qry,[],function(err,results) {
     if(err) {
