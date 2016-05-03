@@ -44,7 +44,7 @@ router.post('/getScores',function(req,res){
     params = [category];
   }
   var sql_qry = "update events set score = ? , comparative = ? where id = ?";
-  console.log("category=>" + category);
+  console.log("For category=> " + category );
   mysql.fetchData(qry,params,function(err,results) {
     if(err){
       res.statusCode = 500;
@@ -57,8 +57,9 @@ router.post('/getScores',function(req,res){
         for(var i in results) {
           (function(i){
             var title = results[i].title;
-            T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
-            //T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            console.log("For Event " + title);
+            //T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
               if(err){
                 console.log(err);
                 res.send(err);
@@ -79,11 +80,14 @@ router.post('/getScores',function(req,res){
                       //console.log("statuses.length=>" + statuses.length);
                       if(parseInt(j) === (statuses.length - 1)){
                         count++;
-                        eventsScore[title] = {score: Math.round(score) , comparative: comparative};
-                      //  console.log("Score and comparatvie for"+ title);
-                       // console.log(eventsScore[title]);
-                        console.log([Math.round(score),Math.round(comparative * 1000) / 1000,results[i].id]);
-                        mysql.execQuery(sql_qry,[Math.round(score),Math.round(comparative * 1000) / 1000,results[i].id],function(err,resl){
+                        var finalScore = Math.round(score);
+                        var finalComparative = Math.round(comparative * 1000) / 1000;
+                        console.log("searching the twitter data...");
+                        console.log("Running the sentiment analysis based on  user's discussion about the event..");
+                        console.log("calculating scores based on the sentiment analysis......");
+                        console.log("score : " + finalScore + " comparative : " + finalComparative)
+                        eventsScore[title] = {score: finalScore , comparative: finalComparative};
+                        mysql.execQuery(sql_qry,[finalScore,finalComparative,results[i].id],function(err,resl){
                           if(err){
                             console.log(err);
                           }else{
@@ -104,7 +108,7 @@ router.post('/getScores',function(req,res){
                   }
                 }else{
                   count++;
-                  console.log("count is " + count + " and results.length is"  + results.length);
+                 // console.log("count is " + count + " and results.length is"  + results.length);
                   eventsScore[title] = 0;
                   if(parseInt(count) === (results.length-1)) {
                     var data = {
@@ -138,6 +142,7 @@ router.post('/findCategory', function (req, res) {
       qryToTwitter += "%23" + inputValues[val] + "+";
     }
   }
+  console.log("query prepared for the twitter" + qryToTwitter);
   var category = req.param("category");
   var targetCategory={};
   var comesUnderCategory=[] ;
@@ -173,10 +178,9 @@ router.post('/findCategory', function (req, res) {
   }
   if (comesUnderCategory.length === 0) {
     var hashTags = {};
-    console.log("not found");
+    //console.log("not found");
     console.log(qryToTwitter);
     T.get('search/tweets', {q: qryToTwitter, count: 100}, function (err, data, response) {
-      console.log(response);
       var statuses = data.statuses;
       if (statuses.length) {
         // console.log("statuses exists");
@@ -200,6 +204,9 @@ router.post('/findCategory', function (req, res) {
             }
           }
         }
+        console.log("*********************************************");
+        console.log("Searching twitter for keywords  along with the user input...");
+        console.log("keywords with their frequency..");
         console.log(hashTags);
         for (var key in hashTags) {
           var tempKeyWord = "";
@@ -219,11 +226,12 @@ router.post('/findCategory', function (req, res) {
               //  tempKeyWord += categoryString[i];
               //}
               targetCategory[key] = hashTags[key];
-              console.log(targetCategory);
             }
           }
         }
         var sortable = [];
+        console.log("calculated TF-IDF for each keyword that are found similar to the user input.. ")
+        //console.log(targetCategory);
         for (var category in targetCategory)
           sortable.push([category, targetCategory[category]])
         sortable.sort(function (a, b) {
@@ -256,6 +264,7 @@ router.post('/findCategory', function (req, res) {
             res.statusCode = 500;
             res.send(errorMessage(err));
           }else{
+            console.log("get the events bases on the categories found similar to user interests and based on the scores")
             if(results.length === 0 ){
               res.send({
                 status: fail,
@@ -267,11 +276,27 @@ router.post('/findCategory', function (req, res) {
               for(var n = 0 ; n< results.length ; n++){
                 vectors[n] = [results[n]['score'],results[n]['comparative']];
               }
+              console.log("****vectors generated*****");
+              console.log(vectors);
               kmeans.clusterize(vectors, {k:2}, function(err,cres) {
                 if(err) {
                   console.log(err);
                 }else{
-                  console.log(cres[0].centroid);
+                  console.log("****************GENERATE CLUSTERS***************** ");
+                  console.log("******CLUSTER 1*********");
+                  console.log("Centroid: "+ cres[0].centroid);
+                  console.log("Elements in this cluster: " );
+                  var temCls = "";
+                  for(var i in cres[0].cluster){
+                    console.log(cres[0].cluster[i]);
+                  }
+                  console.log("******CLUSTER 2*********");
+                  console.log("Centroid: "+ cres[1].centroid);
+                  console.log("Elements in this cluster: " );
+                  var temCls = "";
+                  for(var i in cres[1].cluster){
+                    console.log(cres[1].cluster[i]);
+                  }
                   res.send({
                     targetCategory: comesUnderCategory,
                     events: results,

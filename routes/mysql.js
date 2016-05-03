@@ -38,11 +38,11 @@ function fetchData(sqlQuery,params,callback){
         }
         else
         {	// return err or result
-            console.log("DB Results:"+rows);
+            //console.log("DB Results:"+rows);
             callback(err, rows);
         }
     });
-    console.log("\nConnection closed..");
+    //console.log("\nConnection closed..");
     connection.end();
 }
 //params is an array
@@ -50,7 +50,9 @@ function execQuery(query, params,callback) {
     var connection=getConnection();
 
     connection.query(query, params,function(err,result){
-        console.log("In exec Qeury = "+ err);
+        if(err) {
+            console.log("In exec Qeury = "+ err);
+        }
         callback(err,result);
     });
 
