@@ -150,27 +150,75 @@ router.post('/findCategory', function (req, res) {
   for (var obj in Categories.categories) {
    // console.log(name.indexOf(obj));
     //console.log(category.indexOf(obj));
-    if (obj.indexOf(name) > 0 || obj.indexOf(category) > 0) {
+    if (obj === name) {
       //console.log("="+obj);
       comesUnderCategory.push(obj);
       var queryString = "SELECT * FROM adv.events where";
+      var qryStringforCount = "select region_abbr as state , count(*) as value from adv.events where ";
       for(var keyVal in comesUnderCategory) {
         if(parseInt(keyVal) === comesUnderCategory.length-1){
-          queryString += " category_id = ? "
+          queryString += " category_id = ? ";
+          qryStringforCount += " category_id = ? ";
         }else{
-          queryString += " category_id = ? or"
+          queryString += " category_id = ? or";
+          qryStringforCount += " category_id = ? or"
         }
       }
       queryString += " order by score desc";
+      qryStringforCount += "  group by region_abbr ";
       mysql.fetchData(queryString,comesUnderCategory,function(err,results){
         if(err){
           console.log(err);
           res.statusCode = 500;
           res.send(errorMessage(err));
         }else{
-          res.send({
-            targetCategory: comesUnderCategory,
-            events: results
+          var vectors = new Array();
+          for(var n = 0 ; n< results.length ; n++){
+            vectors[n] = [results[n]['score'],results[n]['comparative']];
+          }
+          console.log("****vectors generated*****");
+          kmeans.clusterize(vectors, {k:2}, function(err,cres) {
+            if(err) {
+              console.log(err);
+            }else{
+              console.log("****************GENERATE CLUSTERS***************** ");
+              console.log("******CLUSTER 1*********");
+              console.log("Centroid: "+ cres[0].centroid);
+              console.log("Elements in this cluster: " );
+              var temCls = "";
+              for(var i in cres[0].cluster){
+                console.log(cres[0].cluster[i]);
+              }
+              console.log("******CLUSTER 2*********");
+              console.log("Centroid: "+ cres[1].centroid);
+              console.log("Elements in this cluster: " );
+              var temCls = "";
+              for(var i in cres[1].cluster){
+                console.log(cres[1].cluster[i]);
+              }
+              mysql.fetchData(qryStringforCount,comesUnderCategory,function(err,res1){
+                if(err) {
+                  console.log(err);
+                  res.statusCode = 500;
+                  res.send(errorMessage(err));
+                }else{
+                  res1 = res1.map(function(val){
+                    val["hc-key"] = val.state;
+                    return val;
+                  });
+                  console.log(res1.length);
+                  var data = {
+                    status: "success",
+                    targetCategory: comesUnderCategory,
+                    events: results,
+                    clusterResponse:cres,
+                    stateCount: res1
+                  };
+                  res.statusCode = 200;
+                  res.send(data);
+                }
+              });
+            }
           });
         }
       });
@@ -238,6 +286,7 @@ router.post('/findCategory', function (req, res) {
           return b[1] - a[1];
         });
         console.log(sortable);
+        var tempTargetCategory={};
         for(var ar in sortable){
           var checkCategory = sortable[ar][0];
           //console.log("============");
@@ -245,7 +294,10 @@ router.post('/findCategory', function (req, res) {
           for(var ke in Categories.categories){
             //console.log(ke+ "=" + "checkCategory" + ke.indexOf(checkCategory) );
             if(ke.indexOf(checkCategory) >= 0) {
-              comesUnderCategory.push(ke);
+              if(!tempTargetCategory.hasOwnProperty(ke)){
+                tempTargetCategory[ke] = 1;
+                comesUnderCategory.push(ke);
+              }
             }
           }
         }
@@ -254,14 +306,18 @@ router.post('/findCategory', function (req, res) {
           comesUnderCategory.push('business');
         }
         var queryString = "SELECT * FROM adv.events where";
+        var qryStringforCount = "select region_abbr as state , count(*) as value from adv.events  where";
         for(var keyVal in comesUnderCategory) {
           if(parseInt(keyVal) === comesUnderCategory.length-1){
-            queryString += " category_id = ? "
+            queryString += " category_id = ? ";
+            qryStringforCount += " category_id = ? ";
           }else{
-            queryString += " category_id = ? or"
+            queryString += " category_id = ? or";
+            qryStringforCount += " category_id = ? or"
           }
         }
         queryString += " order by score desc";
+        qryStringforCount += "  group by region_abbr ";
         mysql.fetchData(queryString,comesUnderCategory,function(err,results){
           if(err){
             console.log(err);
@@ -300,10 +356,27 @@ router.post('/findCategory', function (req, res) {
                   for(var i in cres[1].cluster){
                     console.log(cres[1].cluster[i]);
                   }
-                  res.send({
-                    targetCategory: comesUnderCategory,
-                    events: results,
-                    clusterResponse:cres
+                  mysql.fetchData(qryStringforCount,comesUnderCategory,function(err,res1){
+                    if(err) {
+                      console.log(err);
+                      res.statusCode = 500;
+                      res.send(errorMessage(err));
+                    }else{
+                      res1 = res1.map(function(val){
+                        val["hc-key"] = val.state;
+                        return val;
+                      });
+                      console.log(res1.length);
+                      var data = {
+                        status: "success",
+                        targetCategory: comesUnderCategory,
+                        events: results,
+                        clusterResponse:cres,
+                        stateCount: res1
+                      };
+                      res.statusCode = 200;
+                      res.send(data);
+                    }
                   });
                 }
               });
