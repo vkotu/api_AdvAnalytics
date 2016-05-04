@@ -139,7 +139,7 @@ router.post('/findCategory', function (req, res) {
     if(parseInt(val) === inputValues.length-1){
       qryToTwitter += "%23" + inputValues[val];
     }else{
-      qryToTwitter += "%23" + inputValues[val] + "+";
+      qryToTwitter += "%23" + inputValues[val] + " OR ";
     }
   }
   console.log("query prepared for the twitter" + qryToTwitter);
@@ -153,7 +153,7 @@ router.post('/findCategory', function (req, res) {
     if (obj.indexOf(name) > 0 || obj.indexOf(category) > 0) {
       //console.log("="+obj);
       comesUnderCategory.push(obj);
-      var queryString = "SELECT * FROM adv.events where"
+      var queryString = "SELECT * FROM adv.events where";
       for(var keyVal in comesUnderCategory) {
         if(parseInt(keyVal) === comesUnderCategory.length-1){
           queryString += " category_id = ? "
@@ -249,7 +249,11 @@ router.post('/findCategory', function (req, res) {
             }
           }
         }
-        var queryString = "SELECT * FROM adv.events where"
+        if(comesUnderCategory.length === 0 || comesUnderCategory.length === 1){
+          comesUnderCategory.push('sales');
+          comesUnderCategory.push('business');
+        }
+        var queryString = "SELECT * FROM adv.events where";
         for(var keyVal in comesUnderCategory) {
           if(parseInt(keyVal) === comesUnderCategory.length-1){
             queryString += " category_id = ? "
@@ -277,7 +281,6 @@ router.post('/findCategory', function (req, res) {
                 vectors[n] = [results[n]['score'],results[n]['comparative']];
               }
               console.log("****vectors generated*****");
-              console.log(vectors);
               kmeans.clusterize(vectors, {k:2}, function(err,cres) {
                 if(err) {
                   console.log(err);
