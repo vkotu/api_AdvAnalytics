@@ -28,6 +28,16 @@ var T1 = new Twit({
   access_token_secret:  '5NHVOJKAE9iExcxnvPYzVvwvHkh8r8p184u2AZVJoDwKg',
   timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
 });
+//joga credentials
+var T2 = new Twit({
+  consumer_key:         'WNYAE7QFl9T9FEPuGsYgR8i25',
+  consumer_secret:      'ZK46A61ZCn9cJgdXIF6Fx9YEAmI3Cm5tD8bU2MhKNFp5xrFo3n',
+  access_token:         '592714288-fPAWcGlQyqZoTBVltRPRAbmkaHQr1Z4KyKMJK5lv',
+  access_token_secret:  'BIeBltTVtSZjaQ6S7OPsALoJXpiZCFKsnFbLPfd3tVGaD',
+  timeout_ms:           60*1000,  // optional HTTP request timeout to apply to all requests.
+});
+
+
 
 
 
@@ -58,8 +68,9 @@ router.post('/getScores',function(req,res){
           (function(i){
             var title = results[i].title;
             console.log("For Event " + title);
-            //T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
-            T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            //T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            //T2.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
               if(err){
                 console.log(err);
                 res.send(err);

@@ -24,7 +24,7 @@ var categories = {
     "schools_alumni" : 22,
     "clubs_associations": 23,
     "outdoors_recreation": 24,
-    "animals":26,
+    //"animals":26,
     "politics":27,
     "sales":28,
     "science":29,
