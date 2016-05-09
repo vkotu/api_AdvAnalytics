@@ -9,8 +9,19 @@ var Twit = require('twit');
 var sentimentAnalysis = require('sentiment-analysis');
 var sentiment = require('sentiment');
 var kmeans = require('node-kmeans');
-
+var NodeRestClient = require('node-rest-client').Client;
+var restClient = new NodeRestClient();
 var Categories = require('./categories');
+var US_States = require('./states');
+var argsStattleShip = {
+
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "6e471a50f81ea5a438864529859c5684",
+    "Accept": "application/vnd.stattleship.com; version=1"
+  }
+
+};
 
 var T = new Twit({
   consumer_key:         'Y62466vWGYk4ZLLXMTgeEWCP2',
@@ -38,8 +49,421 @@ var T2 = new Twit({
 });
 
 
+router.post('/getFootBallGames', function(req,res) {
+  var parameters =  {
+    per_page: 40
+  };
+  argsStattleShip.parameters = parameters;
+  var q ="delete from games where type  = ? and id >0";
+  mysql.execQuery(q,["football"],function(err,res1){
+    if(err){
+      console.log(err);
+      res.send(err);
+    }else{
+      restClient.get("https://www.stattleship.com/football/nfl/games", argsStattleShip, function (data, response) {
+        // parsed response body as js object
+        console.log(data);
+        var games = data.games;
+        var venues  = data.venues;
+        var venueObj = {}
+        for(var j in venues){
+          var venue = venues[j];
+          if(!venueObj.hasOwnProperty(venue.id)){
+            venueObj[venue.id] = venue;
+          }
+        }
+        for(var i in games) {
+          (function (i) {
+            var game = games[i];
+            var venu = venueObj[game.venue_id];
+            var city = venu.city;
+            var state = venu.state;
+            var country = venu.country;
+            var state_abbr = "us-"+US_States[state];
+            var qry = "insert into games  (gameid, created_at, updated_at,attendance,label, name,onwhen ,started_at,status,title,season_id,venue_id,type,state,city,country,state_abbr,category) " +
+                "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            var params = [game.id, game.created_at, game.updated_at, game.attendance, game.label, game.name, game.on, game.started_at, game.status,
+              game.title, game.season_id, game.venue_id,"football",state,city,country,state_abbr,"nike"];
+            mysql.execQuery(qry, params, function (err, results) {
+              if (err) {
+                console.log(err);
+                res.send(err);
+              } else {
+                if (parseInt(i) === games.length - 1) {
+                  res.send("inserted all data");
+                }
+              }
+            });
+          })(i);
+        }
+      });
+    }
+  })
+});
+
+router.post('/getbaseballGames', function(req,res) {
+  var parameters =  {
+    per_page: 40
+  };
+  argsStattleShip.parameters = parameters;
+  var q ="delete from games where type  = ? and id >0";
+  mysql.execQuery(q,["baseball"],function(err,res1){
+    if(err){
+      console.log(err);
+      res.send(err);
+    }else{
+      restClient.get("https://www.stattleship.com/baseball/mlb/games", argsStattleShip, function (data, response) {
+        // parsed response body as js object
+        console.log(data);
+        var games = data.games;
+        var venues  = data.venues;
+        var venueObj = {}
+        for(var j in venues){
+          var venue = venues[j];
+          if(!venueObj.hasOwnProperty(venue.id)){
+            venueObj[venue.id] = venue;
+          }
+        }
+        for(var i in games) {
+          (function (i) {
+            var game = games[i];
+            var venu = venueObj[game.venue_id];
+            var city = venu.city;
+            var state = venu.state;
+            var country = venu.country;
+            var state_abbr = "us-"+US_States[state];
+            var qry = "insert into games  (gameid, created_at, updated_at,attendance,label, name,onwhen ,started_at,status,title,season_id,venue_id,type,state,city,country,state_abbr,category) " +
+                "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            var params = [game.id, game.created_at, game.updated_at, game.attendance, game.label, game.name, game.on, game.started_at, game.status,
+              game.title, game.season_id, game.venue_id,"baseball",state,city,country,state_abbr,"nike"];
+            mysql.execQuery(qry, params, function (err, results) {
+              if (err) {
+                console.log(err);
+                res.send(err);
+              } else {
+                if (parseInt(i) === games.length - 1) {
+                  res.send("inserted all data");
+                }
+              }
+            });
+          })(i);
+        }
+      });
+    }
+  })
+});
+
+router.post('/getbasketballGames', function(req,res) {
+  var parameters =  {
+    per_page: 40
+  };
+  argsStattleShip.parameters = parameters;
+  var q ="delete from games where type  = ? and id >0";
+  mysql.execQuery(q,["basketball"],function(err,res1){
+    if(err){
+      console.log(err);
+      res.send(err);
+    }else{
+      restClient.get("https://www.stattleship.com/basketball/nba/games", argsStattleShip, function (data, response) {
+        // parsed response body as js object
+        console.log(data);
+        var games = data.games;
+        var venues  = data.venues;
+        var venueObj = {}
+        for(var j in venues){
+          var venue = venues[j];
+          if(!venueObj.hasOwnProperty(venue.id)){
+            venueObj[venue.id] = venue;
+          }
+        }
+        for(var i in games) {
+          (function (i) {
+            var game = games[i];
+            var venu = venueObj[game.venue_id];
+            var city = venu.city;
+            var state = venu.state;
+            var country = venu.country;
+            var state_abbr = "us-"+US_States[state];
+            var qry = "insert into games  (gameid, created_at, updated_at,attendance,label, name,onwhen ,started_at,status,title,season_id,venue_id,type,state,city,country,state_abbr,category) " +
+                "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            var params = [game.id, game.created_at, game.updated_at, game.attendance, game.label, game.name, game.on, game.started_at, game.status,
+              game.title, game.season_id, game.venue_id,"basketball",state,city,country,state_abbr,"nike"];
+            mysql.execQuery(qry, params, function (err, results) {
+              if (err) {
+                console.log(err);
+                res.send(err);
+              } else {
+                if (parseInt(i) === games.length - 1) {
+                  res.send("inserted all data");
+                }
+              }
+            });
+          })(i);
+        }
+      });
+    }
+  })
+});
 
 
+router.post('/gethockeygames', function(req,res) {
+  var parameters =  {
+    per_page: 40
+  };
+  argsStattleShip.parameters = parameters;
+  var q ="delete from games where type  = ? and id >0";
+  mysql.execQuery(q,["hockey"],function(err,res1){
+    if(err){
+      console.log(err);
+      res.send(err);
+    }else{
+      restClient.get("https://www.stattleship.com/hockey/nhl/games", argsStattleShip, function (data, response) {
+        // parsed response body as js object
+        console.log(data);
+        var games = data.games;
+        var venues  = data.venues;
+        var venueObj = {}
+        for(var j in venues){
+          var venue = venues[j];
+          if(!venueObj.hasOwnProperty(venue.id)){
+            venueObj[venue.id] = venue;
+          }
+        }
+        for(var i in games) {
+          (function (i) {
+            var game = games[i];
+            var venu = venueObj[game.venue_id];
+            var city = venu.city;
+            var state = venu.state;
+            var country = venu.country;
+            var state_abbr = "us-"+US_States[state];
+            var qry = "insert into games  (gameid, created_at, updated_at,attendance,label, name,onwhen ,started_at,status,title,season_id,venue_id,type,state,city,country,state_abbr,category) " +
+                "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            var params = [game.id, game.created_at, game.updated_at, game.attendance, game.label, game.name, game.on, game.started_at, game.status,
+              game.title, game.season_id, game.venue_id,"hockey",state,city,country,state_abbr,"nike"];
+            mysql.execQuery(qry, params, function (err, results) {
+              if (err) {
+                console.log(err);
+                res.send(err);
+              } else {
+                if (parseInt(i) === games.length - 1) {
+                  res.send("inserted all data");
+                }
+              }
+            });
+          })(i);
+        }
+      });
+    }
+  })
+});
+router.post('/getscores2',function(req,res){
+  var category = req.param("category");
+  var qry;
+  var params;
+  if(category === "toyota") {
+    qry = "SELECT * FROM adv.toyota ";
+  }else{
+    qry = "SELECT * FROM adv.games ";
+  }
+  params = [];
+  var sql_qry;
+  if(category === "toyota"){
+    sql_qry = "update toyota set score = ? , comparative = ? where id = ?";
+  }else{
+    sql_qry = "update games set score = ? , comparative = ? where id = ?";
+  }
+  console.log("For category=> " + category );
+  mysql.fetchData(qry,params,function(err,results) {
+    if(err){
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    }else {
+      console.log("length=> " +results.length);
+      var eventsScore = {};
+      var count = 0;
+      if(results.length) {
+        for(var i in results) {
+          (function(i){
+            var title = results[i].title;
+            console.log("For Event " + title);
+            T.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+            //T1.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+              //T2.get('search/tweets', { q: title, count: 100 }, function(err, data, response) {
+              if(err){
+                console.log(err);
+                res.send(err);
+              }else{
+                // console.log(data);
+                var statuses = data.statuses;
+                // console.log("initial length=> "+statuses.length);
+                var op = {};
+                var sentimentReport;
+                var score = 0;
+                var comparative = 0;
+                if(statuses.length>0){
+                  for(var j in statuses) {
+                    (function(j){
+                      sentimentReport = sentiment(statuses[j].text);
+                      score += parseInt(sentimentReport.score);
+                      comparative += (sentimentReport.comparative);
+                      //console.log("statuses.length=>" + statuses.length);
+                      if(parseInt(j) === (statuses.length - 1)){
+                        count++;
+                        var finalScore = Math.round(score);
+                        var finalComparative = Math.round(comparative * 1000) / 1000;
+                        console.log("searching the twitter data...");
+                        console.log("Running the sentiment analysis based on  user's discussion about the event..");
+                        console.log("calculating scores based on the sentiment analysis......");
+                        console.log("score : " + finalScore + " comparative : " + finalComparative)
+                        eventsScore[title] = {score: finalScore , comparative: finalComparative};
+                        mysql.execQuery(sql_qry,[finalScore,finalComparative,results[i].id],function(err,resl){
+                          if(err){
+                            console.log(err);
+                          }else{
+
+                          }
+                        });
+                        // console.log("count is " + count + " and results.length is"  + results.length);
+                        if(parseInt(count) === (results.length-1)) {
+                          var data = {
+                            status: "success",
+                            eventScore: eventsScore
+                          };
+                          res.statusCode = 200;
+                          res.send(data);
+                        }
+                      }
+                    })(j);
+                  }
+                }else{
+                  count++;
+                  // console.log("count is " + count + " and results.length is"  + results.length);
+                  eventsScore[title] = 0;
+                  if(parseInt(count) === (results.length-1)) {
+                    var data = {
+                      status: "success",
+                      eventScore: eventsScore
+                    };
+                    res.statusCode = 200;
+                    res.send(data);
+                  }
+                }
+              }
+            });
+          })(i);
+        };
+      }else{
+        res.statusCode = 500;
+        res.send(errorMessage("Category not found"));
+      }
+    }
+  });
+});
+
+router.post('/get_nike', function (req, res) {
+  var category = req.param("category");
+  var qry = "select * from adv.games  order by score desc";
+  var params = [category];
+  mysql.execQuery(qry, params, function (err, results) {
+    if (err) {
+      console.log(err);
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    } else {
+      var vectors = new Array();
+      for (var n = 0; n < results.length; n++) {
+        vectors[n] = [results[n]['score'], results[n]['comparative']];
+      }
+      console.log("****vectors generated*****");
+      kmeans.clusterize(vectors, {k: 2}, function (err, cres) {
+        if (err) {
+          console.log(err);
+          res.statusCode = 500;
+          res.send(errorMessage(err));
+        } else {
+          console.log("****************GENERATE CLUSTERS***************** ");
+          console.log("******CLUSTER 1*********");
+          console.log("Centroid: " + cres[0].centroid);
+          console.log("Elements in this cluster: ");
+          var temCls = "";
+          for (var i in cres[0].cluster) {
+            console.log(cres[0].cluster[i]);
+          }
+          console.log("******CLUSTER 2*********");
+          console.log("Centroid: " + cres[1].centroid);
+          console.log("Elements in this cluster: ");
+          var temCls = "";
+          for (var i in cres[1].cluster) {
+            console.log(cres[1].cluster[i]);
+          }
+          var data = {
+            status: "success",
+            events: results,
+            clusterResponse: cres
+          };
+          res.statusCode = 200;
+          res.send(data);
+        }
+      });
+    }
+
+  });
+
+
+});
+
+router.post('/get_toyota', function (req, res) {
+  var category = req.param("category");
+  var qry = "select * from adv.toyota  order by score desc";
+  var params = [category];
+  mysql.execQuery(qry, params, function (err, results) {
+    if (err) {
+      console.log(err);
+      res.statusCode = 500;
+      res.send(errorMessage(err));
+    } else {
+      var vectors = new Array();
+      for (var n = 0; n < results.length; n++) {
+        vectors[n] = [results[n]['score'], results[n]['comparative']];
+      }
+      console.log("****vectors generated*****");
+      kmeans.clusterize(vectors, {k: 2}, function (err, cres) {
+        if (err) {
+          console.log(err);
+          res.statusCode = 500;
+          res.send(errorMessage(err));
+        } else {
+          console.log("****************GENERATE CLUSTERS***************** ");
+          console.log("******CLUSTER 1*********");
+          console.log("Centroid: " + cres[0].centroid);
+          console.log("Elements in this cluster: ");
+          var temCls = "";
+          for (var i in cres[0].cluster) {
+            console.log(cres[0].cluster[i]);
+          }
+          console.log("******CLUSTER 2*********");
+          console.log("Centroid: " + cres[1].centroid);
+          console.log("Elements in this cluster: ");
+          var temCls = "";
+          for (var i in cres[1].cluster) {
+            console.log(cres[1].cluster[i]);
+          }
+          var data = {
+            status: "success",
+            events: results,
+            clusterResponse: cres
+          };
+          res.statusCode = 200;
+          res.send(data);
+        }
+      });
+    }
+
+  });
+
+
+});
 
 router.post('/getScores',function(req,res){
   var category = req.param("category");
@@ -141,6 +565,7 @@ router.post('/getScores',function(req,res){
     }
   });
 });
+
 
 router.post('/findCategory', function (req, res) {
   var name = req.param("name");
@@ -408,7 +833,7 @@ router.post('/findCategory', function (req, res) {
 });
 
 router.post('/searchTwitter',function(req,res){
-  T.get('search/tweets', {q: '%23' + "hp beats" , count: 100}, function (err, data, response){
+  T.get('search/tweets', {q: "Giants vs Eagles" , count: 100}, function (err, data, response){
     console.log(data);
     res.send(data);
   });
