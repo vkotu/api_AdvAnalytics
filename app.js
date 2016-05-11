@@ -35,7 +35,7 @@ var passport = require('passport');
 
 app.use('/', routes);
 app.use('/users', users);
-//app.use('/twit',twitterAPI);
+// app.use('/twit',twitterAPI);
 
 passport.use(new LocalStrategy({usernameField: 'email',passwordField: 'password',session:false,passReqToCallback:true},
     function(req,username, password, done) {

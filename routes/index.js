@@ -416,46 +416,57 @@ router.post('/get_nike', function (req, res) {
 router.post('/get_toyota', function (req, res) {
   var category = req.param("category");
   var qry = "select * from adv.toyota  order by score desc";
+  var qry2 = "SELECT * FROM adv.games where type = ? || type = ?";
   var params = [category];
+  var params2 = ["football","basketball"];
   mysql.execQuery(qry, params, function (err, results) {
     if (err) {
       console.log(err);
       res.statusCode = 500;
       res.send(errorMessage(err));
     } else {
-      var vectors = new Array();
-      for (var n = 0; n < results.length; n++) {
-        vectors[n] = [results[n]['score'], results[n]['comparative']];
-      }
-      console.log("****vectors generated*****");
-      kmeans.clusterize(vectors, {k: 2}, function (err, cres) {
-        if (err) {
+      mysql.execQuery(qry2,params2,function(err,resl){
+        if(err){
           console.log(err);
           res.statusCode = 500;
           res.send(errorMessage(err));
-        } else {
-          console.log("****************GENERATE CLUSTERS***************** ");
-          console.log("******CLUSTER 1*********");
-          console.log("Centroid: " + cres[0].centroid);
-          console.log("Elements in this cluster: ");
-          var temCls = "";
-          for (var i in cres[0].cluster) {
-            console.log(cres[0].cluster[i]);
+        }else{
+          var vectors = new Array();
+          results = results.concat(resl);
+          for (var n = 0; n < results.length; n++) {
+            vectors[n] = [results[n]['score'], results[n]['comparative']];
           }
-          console.log("******CLUSTER 2*********");
-          console.log("Centroid: " + cres[1].centroid);
-          console.log("Elements in this cluster: ");
-          var temCls = "";
-          for (var i in cres[1].cluster) {
-            console.log(cres[1].cluster[i]);
-          }
-          var data = {
-            status: "success",
-            events: results,
-            clusterResponse: cres
-          };
-          res.statusCode = 200;
-          res.send(data);
+          console.log("****vectors generated*****");
+          kmeans.clusterize(vectors, {k: 2}, function (err, cres) {
+            if (err) {
+              console.log(err);
+              res.statusCode = 500;
+              res.send(errorMessage(err));
+            } else {
+              console.log("****************GENERATE CLUSTERS***************** ");
+              console.log("******CLUSTER 1*********");
+              console.log("Centroid: " + cres[0].centroid);
+              console.log("Elements in this cluster: ");
+              var temCls = "";
+              for (var i in cres[0].cluster) {
+                console.log(cres[0].cluster[i]);
+              }
+              console.log("******CLUSTER 2*********");
+              console.log("Centroid: " + cres[1].centroid);
+              console.log("Elements in this cluster: ");
+              var temCls = "";
+              for (var i in cres[1].cluster) {
+                console.log(cres[1].cluster[i]);
+              }
+              var data = {
+                status: "success",
+                events: results,
+                clusterResponse: cres
+              };
+              res.statusCode = 200;
+              res.send(data);
+            }
+          });
         }
       });
     }
